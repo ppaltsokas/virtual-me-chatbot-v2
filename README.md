@@ -186,6 +186,10 @@ This project is for personal use.
 
 ---
 
-**Live Demo**: [Coming Soon]
+**Live Demo**: https://www.ppaltsokas.com (Coming Soon - Setting up custom domain)
 
 **Repository**: https://github.com/ppaltsokas/virtual-me-chatbot-v2
+
+## 🌐 Deployment
+
+This app is deployed and accessible online. For custom domain setup instructions, see [CUSTOM_DOMAIN.md](./CUSTOM_DOMAIN.md).
