@@ -1,0 +1,980 @@
+import os
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
+from pydantic import BaseModel
+import google.generativeai as genai
+import json
+from pathlib import Path
+from typing import List, Dict, Tuple, Optional
+import PyPDF2
+import logging
+from datetime import datetime
+from dotenv import load_dotenv
+import requests
+import re
+import hashlib
+import random
+from PIL import Image
+import io
+import base64
+
+# Configure logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Load environment variables from .env.local file
+env_path = Path('.env.local')
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+    logger.info(f"Loaded environment variables from {env_path}")
+else:
+    # Fallback to .env if .env.local doesn't exist
+    load_dotenv()
+    logger.info("Loaded environment variables from .env file")
+
+app = FastAPI(
+    title="Virtual Persona CV API",
+    description="Chatbot API with Knowledge Base integration",
+    version="1.0.0"
+)
+
+# Enable CORS for local development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    logger.warning("GEMINI_API_KEY not found in environment variables. Chat functionality may not work.")
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    logger.info("Gemini API configured successfully")
+
+# Pushover Configuration
+PUSHOVER_TOKEN = os.getenv("PUSHOVER_TOKEN")
+PUSHOVER_USER = os.getenv("PUSHOVER_USER")
+
+def push_notification(text: str) -> None:
+    """Send a Pushover notification. Fails silently if not configured."""
+    if not PUSHOVER_TOKEN or not PUSHOVER_USER:
+        return
+    try:
+        requests.post(
+            "https://api.pushover.net/1/messages.json",
+            data={
+                "token": PUSHOVER_TOKEN,
+                "user": PUSHOVER_USER,
+                "message": text,
+            },
+            timeout=8,
+        )
+    except Exception as e:
+        logger.warning(f"Pushover notification failed: {e}")
+
+# Detection patterns
+EMAIL_PATTERN = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+PHONE_PATTERN = re.compile(r"(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\d{10,}", re.IGNORECASE)
+NAME_KEYWORDS = ("my name is", "i'm", "i am", "call me", "this is", "name:", "i'm called")
+HACKING_KEYWORDS = (
+    "jailbreak", "ignore previous", "system prompt", "forget instructions",
+    "you are now", "act as", "pretend to be", "roleplay", "developer mode",
+    "admin mode", "bypass", "override", "hack", "exploit", "vulnerability",
+    "security flaw", "backdoor", "root access", "sudo", "privilege escalation"
+)
+
+# Track first messages per session (simple in-memory tracking)
+first_messages: set = set()  # Track by message hash
+# Track sessions that have used the "Hello there" greeting
+hello_there_sessions: set = set()  # Track by session identifier
+
+def should_alert(message: str, message_hash: Optional[str] = None) -> Optional[str]:
+    """
+    Determine if we should send a Pushover alert and return the alert message.
+    Returns None if no alert needed.
+    """
+    message_lower = message.lower()
+    
+    # Alert on first message (chatbot opened) - track unique messages
+    if message_hash and message_hash not in first_messages:
+        first_messages.add(message_hash)
+        # Only alert if it's a short message (likely a greeting/opening)
+        if len(message.strip()) < 150:
+            return f"🔔 Chatbot opened\nMessage: {message[:200]}"
+    
+    # Alert on email detection
+    email_match = EMAIL_PATTERN.search(message)
+    if email_match:
+        email = email_match.group(0)
+        return f"📧 Email shared: {email}\nMessage: {message[:200]}"
+    
+    # Alert on phone detection
+    phone_match = PHONE_PATTERN.search(message)
+    if phone_match:
+        phone = phone_match.group(0)
+        return f"📞 Phone shared: {phone}\nMessage: {message[:200]}"
+    
+    # Alert on name detection
+    for keyword in NAME_KEYWORDS:
+        if keyword in message_lower:
+            # Extract potential name (next 1-3 words after keyword)
+            idx = message_lower.find(keyword)
+            words_after = message[idx:idx+100].split()
+            if len(words_after) > 1:
+                potential_name = " ".join(words_after[1:4])[:50]
+                return f"👤 Name shared: {potential_name}\nMessage: {message[:200]}"
+    
+    # Alert on hacking/jailbreak attempts
+    for keyword in HACKING_KEYWORDS:
+        if keyword in message_lower:
+            return f"⚠️ Potential jailbreak/hack attempt detected\nKeyword: {keyword}\nMessage: {message[:200]}"
+    
+    return None
+
+# Knowledge Base Configuration
+KB_FOLDER = Path("kb")
+ME_FOLDER = Path("me")  # Persona/profile data folder
+
+# Load and cache knowledge base
+knowledge_base: Dict[str, str] = {}
+kb_metadata: Dict[str, Dict] = {}  # Store metadata like file type, size, etc.
+kb_images: Dict[str, List[str]] = {}  # Map PDF file paths to list of image filenames
+
+# Load and cache persona data
+persona_data: Dict[str, str] = {}
+persona_metadata: Dict[str, Dict] = {}  # Store metadata like file type, size, etc.
+
+# Images folder for extracted PDF images
+IMAGES_FOLDER = Path("kb/images")
+IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
+
+def extract_images_from_pdf(pdf_path: Path, pdf_key: str) -> List[str]:
+    """Extract images from a PDF file and save them to the images folder."""
+    extracted_images = []
+    try:
+        with open(pdf_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            image_count = 0
+            max_images_per_pdf = 50  # Limit to prevent hangs on PDFs with many images
+            max_pages = 100  # Limit pages to process
+            
+            for page_num, page in enumerate(pdf_reader.pages[:max_pages]):
+                try:
+                    if '/Resources' in page and '/XObject' in page['/Resources']:
+                        xObject = page['/Resources']['/XObject'].get_object()
+                        
+                        if not isinstance(xObject, dict):
+                            continue
+                            
+                        for obj_name in xObject:
+                            obj = xObject[obj_name]
+                            if '/Subtype' in obj and obj['/Subtype'] == '/Image':
+                                try:
+                                    # Get image dimensions
+                                    width = obj['/Width']
+                                    height = obj['/Height']
+                                    
+                                    # Get image data
+                                    if '/Filter' in obj:
+                                        filter_type = obj['/Filter']
+                                        if isinstance(filter_type, list):
+                                            filter_type = filter_type[0]
+                                        
+                                        # Handle different compression types
+                                        if filter_type == '/DCTDecode':  # JPEG
+                                            data = obj.get_data()
+                                            # Create image filename
+                                            pdf_name = pdf_path.stem
+                                            image_filename = f"{pdf_name}_page{page_num+1}_img{image_count}.jpg"
+                                            image_path = IMAGES_FOLDER / image_filename
+                                            
+                                            # Save JPEG directly
+                                            with open(image_path, 'wb') as img_file:
+                                                img_file.write(data)
+                                            
+                                            extracted_images.append(image_filename)
+                                            image_count += 1
+                                            logger.info(f"Extracted JPEG image: {image_filename} from {pdf_path.name} page {page_num+1}")
+                                            
+                                            # Limit total images to prevent hangs
+                                            if image_count >= max_images_per_pdf:
+                                                logger.info(f"Reached image limit ({max_images_per_pdf}) for {pdf_path.name}, stopping extraction")
+                                                return extracted_images
+                                        else:
+                                            # Try to extract as raw image
+                                            try:
+                                                data = obj.get_data()
+                                                
+                                                # Determine color mode
+                                                if '/ColorSpace' in obj:
+                                                    colorspace = obj['/ColorSpace']
+                                                    if isinstance(colorspace, list):
+                                                        colorspace = colorspace[0]
+                                                    
+                                                    if colorspace == '/DeviceRGB':
+                                                        mode = "RGB"
+                                                    elif colorspace == '/DeviceGray':
+                                                        mode = "L"
+                                                    elif colorspace == '/DeviceCMYK':
+                                                        mode = "CMYK"
+                                                    else:
+                                                        mode = "RGB"
+                                                else:
+                                                    mode = "RGB"
+                                                
+                                                # Create image filename
+                                                pdf_name = pdf_path.stem
+                                                image_filename = f"{pdf_name}_page{page_num+1}_img{image_count}.png"
+                                                image_path = IMAGES_FOLDER / image_filename
+                                                
+                                                # Convert and save image
+                                                img = Image.frombytes(mode, (width, height), data)
+                                                if mode == "CMYK":
+                                                    img = img.convert("RGB")
+                                                img.save(image_path, "PNG")
+                                                
+                                                extracted_images.append(image_filename)
+                                                image_count += 1
+                                                logger.info(f"Extracted image: {image_filename} from {pdf_path.name} page {page_num+1}")
+                                                
+                                                # Limit total images to prevent hangs
+                                                if image_count >= max_images_per_pdf:
+                                                    logger.info(f"Reached image limit ({max_images_per_pdf}) for {pdf_path.name}, stopping extraction")
+                                                    return extracted_images
+                                            except Exception as e:
+                                                logger.warning(f"Error extracting raw image from {pdf_path.name} page {page_num+1}: {e}")
+                                                continue
+                                    else:
+                                        # No filter, try raw extraction
+                                        try:
+                                            data = obj.get_data()
+                                            mode = "RGB"
+                                            
+                                            pdf_name = pdf_path.stem
+                                            image_filename = f"{pdf_name}_page{page_num+1}_img{image_count}.png"
+                                            image_path = IMAGES_FOLDER / image_filename
+                                            
+                                            img = Image.frombytes(mode, (width, height), data)
+                                            img.save(image_path, "PNG")
+                                            
+                                            extracted_images.append(image_filename)
+                                            image_count += 1
+                                            logger.info(f"Extracted raw image: {image_filename} from {pdf_path.name} page {page_num+1}")
+                                            
+                                            # Limit total images to prevent hangs
+                                            if image_count >= max_images_per_pdf:
+                                                logger.info(f"Reached image limit ({max_images_per_pdf}) for {pdf_path.name}, stopping extraction")
+                                                return extracted_images
+                                        except Exception as e:
+                                            logger.warning(f"Error extracting raw image from {pdf_path.name} page {page_num+1}: {e}")
+                                            continue
+                                except Exception as e:
+                                    logger.warning(f"Error processing image object from {pdf_path.name} page {page_num+1}: {e}")
+                                    continue
+                except Exception as e:
+                    logger.warning(f"Error processing page {page_num+1} of {pdf_path.name}: {e}")
+                    continue
+    except Exception as e:
+        logger.error(f"Error extracting images from PDF {pdf_path}: {e}")
+    
+    return extracted_images
+
+def extract_text_from_pdf(pdf_path: Path) -> str:
+    """Extract text content from a PDF file."""
+    try:
+        with open(pdf_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text() + "\n"
+            return text
+    except Exception as e:
+        logger.error(f"Error reading PDF {pdf_path}: {e}")
+        return ""
+
+def extract_text_from_file(file_path: Path) -> str:
+    """Extract text content from various file types."""
+    try:
+        suffix = file_path.suffix.lower()
+        if suffix == '.pdf':
+            return extract_text_from_pdf(file_path)
+        elif suffix in ['.txt', '.md']:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                return file.read()
+        else:
+            logger.warning(f"Unsupported file type: {suffix} for file {file_path.name}")
+            return ""
+    except Exception as e:
+        logger.error(f"Error reading file {file_path}: {e}")
+        return ""
+
+def load_knowledge_base():
+    """Load all supported files from the kb folder into memory (recursively)."""
+    global knowledge_base, kb_metadata, kb_images
+    if not KB_FOLDER.exists():
+        logger.warning(f"Knowledge base folder {KB_FOLDER} does not exist.")
+        return 0
+    
+    knowledge_base = {}
+    kb_metadata = {}
+    kb_images = {}
+    
+    # Supported file types
+    supported_extensions = ['*.pdf', '*.txt', '*.md']
+    files = []
+    for ext in supported_extensions:
+        # Use rglob() instead of glob() to search recursively in subdirectories
+        files.extend(list(KB_FOLDER.rglob(ext)))
+    
+    logger.info(f"Found {len(files)} files in knowledge base folder (including subdirectories)")
+    
+    for file_path in files:
+        # Get relative path from KB_FOLDER to preserve folder structure
+        relative_path = file_path.relative_to(KB_FOLDER)
+        relative_path_str = str(relative_path).replace('\\', '/')  # Normalize path separators
+        
+        logger.info(f"Loading knowledge base file: {relative_path_str}")
+        text = extract_text_from_file(file_path)
+        if text.strip():
+            # Use relative path as key instead of just filename
+            knowledge_base[relative_path_str] = text
+            kb_metadata[relative_path_str] = {
+                'type': file_path.suffix.lower(),
+                'size': len(text),
+                'loaded_at': datetime.now().isoformat(),
+                'folder': str(relative_path.parent) if relative_path.parent != Path('.') else 'root'
+            }
+            
+            # Extract images from PDFs (with timeout protection)
+            if file_path.suffix.lower() == '.pdf':
+                try:
+                    images = extract_images_from_pdf(file_path, relative_path_str)
+                    if images:
+                        kb_images[relative_path_str] = images
+                        kb_metadata[relative_path_str]['images'] = len(images)
+                        logger.info(f"Extracted {len(images)} images from {relative_path_str}")
+                except Exception as e:
+                    logger.warning(f"Error extracting images from {relative_path_str}: {e}. Continuing without images.")
+                    # Continue loading the PDF text even if image extraction fails
+    
+    logger.info(f"Loaded {len(knowledge_base)} documents into knowledge base.")
+    return len(knowledge_base)
+
+def load_persona_data():
+    """Load all supported files from the me folder into memory."""
+    global persona_data, persona_metadata
+    if not ME_FOLDER.exists():
+        logger.warning(f"Persona folder {ME_FOLDER} does not exist.")
+        return 0
+    
+    persona_data = {}
+    persona_metadata = {}
+    
+    # Supported file types for persona data
+    supported_extensions = ['*.pdf', '*.txt', '*.md']
+    files = []
+    for ext in supported_extensions:
+        files.extend(list(ME_FOLDER.glob(ext)))
+    
+    logger.info(f"Found {len(files)} files in persona folder")
+    
+    for file_path in files:
+        logger.info(f"Loading persona file: {file_path.name}")
+        text = extract_text_from_file(file_path)
+        if text.strip():
+            persona_data[file_path.name] = text
+            persona_metadata[file_path.name] = {
+                'type': file_path.suffix.lower(),
+                'size': len(text),
+                'loaded_at': datetime.now().isoformat()
+            }
+    
+    logger.info(f"Loaded {len(persona_data)} persona documents.")
+    return len(persona_data)
+
+def build_system_prompt(include_hello_greeting: bool = True) -> str:
+    """Build system prompt from base prompt and persona data from me folder.
+    
+    Args:
+        include_hello_greeting: Whether to include the "Hello there" greeting rule
+    """
+    base_prompt = """You are Panagiotis Paltsokas (Panos), a Data Scientist / AI Trust & Safety professional.
+
+About you:
+- Working as AI Operations | RLHF & Model Optimization at TaskUs (Jun 2024 - Ongoing)
+- MSc in Data Science & Machine Learning from Hellenic Open University (2025, 9.98/10)
+- BSc in Mathematics from University of Ioannina (2014)
+- Based in Thessaloniki, Greece
+
+Key projects:
+- Generative AI (GANs & Autoencoders) on Fashion MNIST
+- Time Series Forecasting on 270 years of sunspot data
+- Advanced Classification Pipelines with SVMs, PCA, Gradient Boosting
+
+IMPORTANT: You have access to a knowledge base containing detailed project documents in the /kb folder, including:
+- Data Science projects in the Data_Science_projects folder (Boston House Prices, Nobel Prize Analysis, Space Missions, Movie Budgets, Handwashing Analysis)
+- ML projects and assignments in the ML_projects folder
+
+When asked about projects, data science work, or assignments, ALWAYS search and use information from the knowledge base first. The knowledge base contains actual project files, notebooks, and detailed documentation that should be your primary source of information.
+
+RANDOM SELECTION: When the user asks you to "pick one", "choose one", "select one", or "walk me through" a project, the system will randomly select a project from your portfolio. Use the randomly selected project that is provided in the context - do not pick a different one. This ensures variety in your responses and gives different projects equal opportunity to be discussed.
+
+Keep responses professional, concise, and friendly. Answer questions about your experience, projects, education, and skills based on the resume data, knowledge base, and personal information provided below."""
+    
+    # Add persona data from me folder if available
+    if persona_data:
+        # Prioritize summary.txt and linkedin.pdf if they exist
+        summary_text = ""
+        linkedin_text = ""
+        other_data = []
+        
+        for filename, content in persona_data.items():
+            if filename.lower() == "summary.txt":
+                summary_text = content
+            elif filename.lower() == "linkedin.pdf":
+                linkedin_text = content
+            else:
+                other_data.append((filename, content))
+        
+        # Build persona context section
+        persona_sections = []
+        
+        if summary_text:
+            # Remove the greeting rule if it's already been used
+            if not include_hello_greeting:
+                # Remove the greeting rule section from summary
+                lines = summary_text.split('\n')
+                filtered_lines = []
+                skip_section = False
+                for line in lines:
+                    if "Greeting rule:" in line:
+                        skip_section = True
+                        continue
+                    if skip_section and line.strip() == "":
+                        # Check if next non-empty line is part of another section
+                        skip_section = False
+                        continue
+                    if not skip_section:
+                        filtered_lines.append(line)
+                summary_text = '\n'.join(filtered_lines)
+            
+            persona_sections.append(f"## Summary:\n{summary_text}\n")
+        
+        if linkedin_text:
+            persona_sections.append(f"## LinkedIn Profile:\n{linkedin_text}\n")
+        
+        # Add any other persona files
+        for filename, content in other_data:
+            persona_sections.append(f"## {filename}:\n{content}\n")
+        
+        if persona_sections:
+            persona_context = "\n\n" + "\n".join(persona_sections)
+            base_prompt += persona_context
+    
+    return base_prompt
+
+def detect_random_selection_request(query: str) -> bool:
+    """Detect if the user wants a random selection of projects."""
+    query_lower = query.lower()
+    random_keywords = [
+        "pick one", "choose one", "select one", "pick a", "choose a", "select a",
+        "random", "any one", "any project", "one of your", "one of the",
+        "walk me through", "show me", "tell me about one"
+    ]
+    return any(keyword in query_lower for keyword in random_keywords)
+
+def get_project_files() -> List[str]:
+    """Get all project files from the knowledge base."""
+    project_files = []
+    for filename in knowledge_base.keys():
+        # Filter for project files (Data_Science_projects or ML_projects folders)
+        if 'Data_Science_projects' in filename or 'ML_projects' in filename:
+            project_files.append(filename)
+    return project_files
+
+def get_random_project(query: str = "") -> Optional[Tuple[str, str, float]]:
+    """
+    Randomly select a project from the knowledge base.
+    Optionally filter by query keywords and folder type if provided.
+    Returns (filename, content_chunk, relevance_score) or None.
+    """
+    project_files = get_project_files()
+    if not project_files:
+        return None
+    
+    # Filter by folder type based on query keywords
+    query_lower = query.lower() if query else ""
+    
+    # Determine target folder based on query
+    target_folder = None
+    data_science_keywords = ["data science", "data scientist", "data analysis", "data analytics", "data project", "data science project"]
+    ml_keywords = [
+        "machine learning", "ml", "ml project", "machine learning project",
+        "deep learning", "neural network", "model training", "algorithm",
+        "gan", "autoencoder", "rnn", "gru", "svm", "gradient boosting",
+        "classification", "regression", "supervised learning"
+    ]
+    
+    if any(keyword in query_lower for keyword in data_science_keywords):
+        target_folder = "Data_Science_projects"
+        logger.info("Filtering for Data Science projects")
+    elif any(keyword in query_lower for keyword in ml_keywords):
+        target_folder = "ML_projects"
+        logger.info("Filtering for ML projects")
+    
+    # Filter projects by folder if target specified
+    filtered_files = project_files
+    if target_folder:
+        filtered_files = [f for f in project_files if target_folder in f]
+        if not filtered_files:
+            # Fallback to all projects if no matches in target folder
+            logger.warning(f"No projects found in {target_folder}, using all projects")
+            filtered_files = project_files
+    
+    # If query provided, further filter by keyword matches
+    if query and filtered_files:
+        query_words = set(word for word in query_lower.split() if len(word) > 2)
+        
+        # Score projects by keyword matches
+        scored_projects = []
+        for filename in filtered_files:
+            content = knowledge_base[filename]
+            content_lower = content.lower()
+            
+            # Calculate match score
+            match_score = sum(1 for word in query_words if word in content_lower)
+            if match_score > 0:
+                scored_projects.append((filename, match_score))
+        
+        # If we have matches, randomly select from top matches
+        if scored_projects:
+            scored_projects.sort(key=lambda x: x[1], reverse=True)
+            # Take top 50% of matches for random selection
+            top_count = max(1, len(scored_projects) // 2)
+            top_projects = [p[0] for p in scored_projects[:top_count]]
+            selected_file = random.choice(top_projects)
+        else:
+            # No keyword matches, randomly select from filtered folder
+            selected_file = random.choice(filtered_files)
+    else:
+        # No query or no keyword matches, randomly select from filtered folder
+        selected_file = random.choice(filtered_files)
+    
+    # Get content and create a chunk (use larger portion for walk-through requests)
+    content = knowledge_base[selected_file]
+    # Use first 8000 characters for random selections to provide comprehensive overview
+    # This allows for detailed walk-throughs while keeping context manageable
+    content_chunk = content[:8000] + "..." if len(content) > 8000 else content
+    
+    return (selected_file, content_chunk, 100.0)  # High score to indicate it's selected
+
+def search_knowledge_base(query: str, max_results: int = 3, random_selection: bool = False) -> List[Tuple[str, str, float]]:
+    """
+    Search the knowledge base for relevant content with improved relevance scoring.
+    If random_selection is True, randomly selects projects instead of using relevance.
+    Returns list of (filename, relevant_text_chunk, relevance_score) tuples.
+    """
+    if not knowledge_base:
+        return []
+    
+    # Check if user wants random selection
+    if random_selection or detect_random_selection_request(query):
+        random_project = get_random_project(query)
+        if random_project:
+            logger.info(f"Randomly selected project: {random_project[0]}")
+            return [random_project]
+        # Fall through to normal search if no projects found
+    
+    query_lower = query.lower().strip()
+    query_words = set(word for word in query_lower.split() if len(word) > 2)  # Filter short words
+    
+    if not query_words:
+        return []
+    
+    results = []
+    
+    for filename, content in knowledge_base.items():
+        content_lower = content.lower()
+        
+        # Calculate relevance score
+        # 1. Word frequency in document
+        word_frequency = sum(content_lower.count(word) for word in query_words)
+        
+        # 2. Unique word matches
+        unique_matches = len(set(query_words) & set(content_lower.split()))
+        
+        # 3. Phrase matching (exact query phrase)
+        phrase_match = 1 if query_lower in content_lower else 0
+        
+        # Combined relevance score
+        relevance_score = word_frequency * 0.4 + unique_matches * 10 + phrase_match * 50
+        
+        if relevance_score > 0:
+            # Extract relevant chunks
+            sentences = [s.strip() for s in content.split('.') if s.strip()]
+            relevant_sentences = []
+            
+            for sentence in sentences:
+                sentence_lower = sentence.lower()
+                sentence_score = sum(1 for word in query_words if word in sentence_lower)
+                if sentence_score > 0:
+                    relevant_sentences.append((sentence_score, sentence))
+            
+            # Sort sentences by relevance
+            relevant_sentences.sort(key=lambda x: x[0], reverse=True)
+            
+            # Take top sentences
+            selected_sentences = [s[1] for s in relevant_sentences[:10]]
+            relevant_chunk = '. '.join(selected_sentences)
+            
+            # Limit chunk size
+            if len(relevant_chunk) > 2000:
+                relevant_chunk = relevant_chunk[:2000] + "..."
+            
+            if relevant_chunk:
+                results.append((filename, relevant_chunk, relevance_score))
+    
+    # Sort by relevance score and return top results
+    results.sort(key=lambda x: x[2], reverse=True)
+    return results[:max_results]
+
+# Load knowledge base and persona data on startup
+try:
+    doc_count = load_knowledge_base()
+    logger.info(f"Knowledge base initialized with {doc_count} documents")
+except Exception as e:
+    logger.error(f"Error loading knowledge base: {e}", exc_info=True)
+
+try:
+    persona_count = load_persona_data()
+    logger.info(f"Persona data initialized with {persona_count} documents")
+except Exception as e:
+    logger.error(f"Error loading persona data: {e}", exc_info=True)
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/chat")
+async def chat(request: ChatRequest):
+    """Chat endpoint with knowledge base integration."""
+    try:
+        if not GEMINI_API_KEY:
+            error_msg = "GEMINI_API_KEY is not configured. Please set it in your environment variables."
+            logger.error(error_msg)
+            return StreamingResponse(
+                iter([f"[Error: {error_msg}]"]),
+                media_type="text/plain"
+            )
+        
+        # Create a simple hash of the message for first-message tracking
+        message_hash = hashlib.md5(request.message.strip().lower().encode()).hexdigest()
+        
+        # Check for "Hello there" greeting and track if it's been used
+        message_lower = request.message.strip().lower()
+        is_hello_there = "hello there" in message_lower
+        
+        # Track if this is the first message in a conversation
+        is_first_message = message_hash not in first_messages
+        if is_first_message:
+            first_messages.add(message_hash)
+        
+        # Only include the greeting rule if:
+        # 1. User says "Hello there" AND
+        # 2. This is the first message in the conversation (new conversation)
+        # 3. The greeting hasn't been used in this conversation yet
+        include_greeting_rule = False
+        if is_hello_there and is_first_message and message_hash not in hello_there_sessions:
+            # First "Hello there" in a new conversation - include the greeting rule
+            hello_there_sessions.add(message_hash)
+            include_greeting_rule = True
+        elif is_hello_there and message_hash in hello_there_sessions:
+            # "Hello there" already used in this conversation - don't include the rule
+            include_greeting_rule = False
+        # For all other cases (not "Hello there" or not first message), don't include the rule
+        
+        # Check for alerts
+        alert_msg = should_alert(request.message, message_hash=message_hash)
+        if alert_msg:
+            push_notification(alert_msg)
+            logger.info(f"Pushover alert sent: {alert_msg[:100]}")
+        
+        logger.info(f"Received chat request: {request.message[:50]}...")
+        
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        def generate_response():
+            try:
+                # Search knowledge base for relevant information
+                # Check if user wants random selection
+                wants_random = detect_random_selection_request(request.message)
+                kb_context = ""
+                kb_results = search_knowledge_base(request.message, max_results=2, random_selection=wants_random)
+                referenced_images = []  # Track images from referenced PDFs
+                
+                if kb_results:
+                    if wants_random:
+                        kb_context = "\n\nRandomly selected project from my portfolio:\n\n"
+                    else:
+                        kb_context = "\n\nRelevant information from my project documents:\n\n"
+                    for filename, content, score in kb_results:
+                        kb_context += f"--- From {filename} (relevance: {score:.1f}) ---\n{content}\n\n"
+                        # Check if this PDF has images
+                        if filename in kb_images and kb_images[filename]:
+                            referenced_images.extend(kb_images[filename])
+                    logger.info(f"Found {len(kb_results)} relevant documents in KB (random_selection={wants_random})")
+                    if referenced_images:
+                        logger.info(f"Found {len(referenced_images)} images from referenced PDFs")
+                
+                # Build the prompt with KB context and persona data
+                # Only include greeting rule if it hasn't been used in this conversation
+                full_prompt = build_system_prompt(include_hello_greeting=include_greeting_rule)
+                if kb_context:
+                    full_prompt += kb_context
+                full_prompt += f"\n\nUser: {request.message}\n\nAssistant:"
+                
+                logger.info("Sending request to Gemini API...")
+                response = model.generate_content(
+                    full_prompt,
+                    stream=True
+                )
+                
+                for chunk in response:
+                    if chunk.text:
+                        yield chunk.text
+                        
+            except Exception as e:
+                error_msg = f"Error generating response: {str(e)}"
+                logger.error(error_msg, exc_info=True)
+                yield f"[Error: {error_msg}]"
+        
+        return StreamingResponse(
+            generate_response(),
+            media_type="text/plain"
+        )
+    except Exception as e:
+        error_msg = f"Unexpected error in chat endpoint: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return StreamingResponse(
+            iter([f"[Error: {error_msg}]"]),
+            media_type="text/plain"
+        )
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "gemini_configured": GEMINI_API_KEY is not None,
+        "kb_loaded": len(knowledge_base) > 0,
+        "kb_documents": len(knowledge_base),
+        "persona_loaded": len(persona_data) > 0,
+        "persona_documents": len(persona_data),
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/kb/reload")
+async def reload_knowledge_base():
+    """Reload the knowledge base without restarting the server."""
+    try:
+        count = load_knowledge_base()
+        total_images = sum(len(images) for images in kb_images.values())
+        return {
+            "status": "success",
+            "message": f"Knowledge base reloaded successfully",
+            "documents_loaded": count,
+            "total_images_extracted": total_images,
+            "pdfs_with_images": len(kb_images),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error reloading knowledge base: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/kb/extract-images")
+async def extract_images_from_all_pdfs():
+    """Force re-extraction of images from all PDFs in the knowledge base."""
+    try:
+        extracted_count = 0
+        total_images = 0
+        errors = []
+        
+        # Find all PDF files in the knowledge base
+        pdf_files = []
+        for ext in ['*.pdf']:
+            pdf_files.extend(list(KB_FOLDER.rglob(ext)))
+        
+        logger.info(f"Found {len(pdf_files)} PDF files to process for image extraction")
+        
+        for pdf_path in pdf_files:
+            try:
+                relative_path = pdf_path.relative_to(KB_FOLDER)
+                relative_path_str = str(relative_path).replace('\\', '/')
+                
+                logger.info(f"Extracting images from: {relative_path_str}")
+                images = extract_images_from_pdf(pdf_path, relative_path_str)
+                
+                if images:
+                    kb_images[relative_path_str] = images
+                    if relative_path_str in kb_metadata:
+                        kb_metadata[relative_path_str]['images'] = len(images)
+                    total_images += len(images)
+                    extracted_count += 1
+                    logger.info(f"Extracted {len(images)} images from {relative_path_str}")
+                else:
+                    logger.info(f"No images found in {relative_path_str}")
+            except Exception as e:
+                error_msg = f"Error extracting images from {pdf_path.name}: {str(e)}"
+                logger.warning(error_msg)
+                errors.append(error_msg)
+        
+        return {
+            "status": "success",
+            "message": f"Image extraction completed",
+            "pdfs_processed": len(pdf_files),
+            "pdfs_with_images": extracted_count,
+            "total_images_extracted": total_images,
+            "errors": errors if errors else None,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error extracting images: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/kb/status")
+async def kb_status():
+    """Get knowledge base status and metadata."""
+    return {
+        "total_documents": len(knowledge_base),
+        "documents": [
+            {
+                "filename": filename,
+                "metadata": kb_metadata.get(filename, {})
+            }
+            for filename in knowledge_base.keys()
+        ],
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/me/reload")
+async def reload_persona_data():
+    """Reload the persona data without restarting the server."""
+    try:
+        count = load_persona_data()
+        return {
+            "status": "success",
+            "message": f"Persona data reloaded successfully",
+            "documents_loaded": count,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error reloading persona data: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/me/status")
+async def persona_status():
+    """Get persona data status and metadata."""
+    return {
+        "total_documents": len(persona_data),
+        "documents": [
+            {
+                "filename": filename,
+                "metadata": persona_metadata.get(filename, {})
+            }
+            for filename in persona_data.keys()
+        ],
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/kb/images/{image_filename}")
+async def get_image(image_filename: str):
+    """Serve extracted images from PDFs."""
+    try:
+        # Security: prevent path traversal
+        if '..' in image_filename or '/' in image_filename or '\\' in image_filename:
+            raise HTTPException(status_code=400, detail="Invalid image filename")
+        
+        image_path = IMAGES_FOLDER / image_filename
+        if not image_path.exists():
+            raise HTTPException(status_code=404, detail="Image not found")
+        
+        return FileResponse(image_path, media_type="image/png")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving image {image_filename}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/me/cv")
+async def get_cv():
+    """Serve the CV PDF from the me folder."""
+    try:
+        cv_path = ME_FOLDER / "CV PALTSOKAS PANAGIOTIS.pdf"
+        if not cv_path.exists():
+            raise HTTPException(status_code=404, detail="CV not found")
+        
+        return FileResponse(
+            cv_path,
+            media_type="application/pdf",
+            filename="CV_PALTSOKAS_PANAGIOTIS.pdf",
+            headers={"Content-Disposition": "attachment; filename=CV_PALTSOKAS_PANAGIOTIS.pdf"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving CV: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/kb/pdf/{pdf_path:path}")
+async def get_project_pdf(pdf_path: str):
+    """Serve PDF files from the knowledge base."""
+    try:
+        # Security: prevent path traversal
+        if '..' in pdf_path or pdf_path.startswith('/'):
+            raise HTTPException(status_code=400, detail="Invalid PDF path")
+        
+        # Normalize path separators
+        pdf_path_normalized = pdf_path.replace('\\', '/')
+        pdf_file_path = KB_FOLDER / pdf_path_normalized
+        
+        # Additional security: ensure the file is within KB_FOLDER
+        try:
+            pdf_file_path.resolve().relative_to(KB_FOLDER.resolve())
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid PDF path - outside knowledge base")
+        
+        if not pdf_file_path.exists():
+            raise HTTPException(status_code=404, detail="PDF not found")
+        
+        if not pdf_file_path.suffix.lower() == '.pdf':
+            raise HTTPException(status_code=400, detail="File is not a PDF")
+        
+        # Get filename for download
+        filename = pdf_file_path.name
+        
+        return FileResponse(
+            pdf_file_path,
+            media_type="application/pdf",
+            filename=filename,
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving PDF {pdf_path}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/")
+async def root():
+    return {"status": "Backend is running"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

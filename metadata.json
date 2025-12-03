@@ -1,0 +1,5 @@
+{
+  "name": "Virtual Persona CV",
+  "description": "A fast, interactive portfolio website featuring a Gemini-powered virtual assistant that answers questions based on the user's resume data.",
+  "requestFramePermissions": []
+}
