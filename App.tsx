@@ -94,7 +94,7 @@ const App: React.FC = () => {
 
           <div className="mt-8 lg:mt-0 hidden lg:block">
              <a 
-                href="http://localhost:8000/me/cv"
+                href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/me/cv`}
                 download="CV_PALTSOKAS_PANAGIOTIS.pdf"
                 className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-900 font-semibold rounded-xl hover:bg-white transition-all shadow-lg shadow-white/5 active:scale-95"
              >
@@ -180,7 +180,7 @@ const App: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {projects.map((project) => {
                   const hasPdf = project.pdfPath !== undefined;
-                  const pdfUrl = hasPdf ? `http://localhost:8000/kb/pdf/${encodeURIComponent(project.pdfPath)}` : null;
+                  const pdfUrl = hasPdf ? `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/kb/pdf/${encodeURIComponent(project.pdfPath)}` : null;
                   
                   const ProjectContent = (
                     <>

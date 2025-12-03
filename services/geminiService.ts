@@ -10,10 +10,13 @@ export interface ChatSession {
  * Creates a chat session that communicates with the local Python backend.
  */
 export const createChatSession = (): ChatSession => {
+  // Get API URL from environment variable or default to localhost
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  
   // Check backend health first
   const checkBackendHealth = async (): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:8000/health');
+      const response = await fetch(`${API_URL}/health`);
       return response.ok;
     } catch {
       return false;
@@ -30,7 +33,7 @@ export const createChatSession = (): ChatSession => {
           return;
         }
 
-        const response = await fetch('http://localhost:8000/chat', {
+        const response = await fetch(`${API_URL}/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -97,7 +100,7 @@ export const createChatSession = (): ChatSession => {
         // Provide more helpful error messages
         let errorMessage = " [Connection Error: ";
         if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-          errorMessage += "Cannot connect to the backend server. Please ensure:\n1. The backend is running: python main.py\n2. It's listening on http://localhost:8000\n3. Check that port 8000 is not blocked] ";
+          errorMessage += `Cannot connect to the backend server. Please ensure:\n1. The backend is running: python main.py\n2. It's listening on ${API_URL}\n3. Check that the backend URL is correct] `;
         } else if (error instanceof Error) {
           errorMessage += `${error.message}] `;
         } else {

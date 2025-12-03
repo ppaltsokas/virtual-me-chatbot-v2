@@ -359,7 +359,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
                   {msg.images.map((imageFilename, idx) => (
                     <div key={idx} className="rounded-lg overflow-hidden border border-slate-600/50">
                       <img
-                        src={`http://localhost:8000/kb/images/${imageFilename}`}
+                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/kb/images/${imageFilename}`}
                         alt={`Graph from project documentation`}
                         className="w-full h-auto max-w-full object-contain"
                         onError={(e) => {
