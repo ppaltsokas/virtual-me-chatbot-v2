@@ -50,51 +50,120 @@ Railway will give you URLs for both services automatically.
 
 ## ☁️ Option 2: Google Cloud Run (Backend) + Vercel (Frontend)
 
+> 📘 **New to Google Cloud?** See **[GCP_SETUP_GUIDE.md](./GCP_SETUP_GUIDE.md)** for detailed step-by-step instructions starting from the Google Cloud Console.
+
 ### Part A: Deploy Backend to Google Cloud Run
 
 #### Prerequisites:
-- Google Cloud account (you have this!)
-- Google Cloud CLI installed
+- Google Cloud account with Billing enabled
+- Google Cloud SDK installed
+- A Google Cloud project created
 
-#### Steps:
+#### Initial Setup (One-time):
 
-1. **Install Google Cloud CLI** (if not installed):
+1. **Install Google Cloud SDK** (if not installed):
    ```powershell
    # Download from: https://cloud.google.com/sdk/docs/install
+   # Or use winget:
+   winget install Google.CloudSDK
    ```
 
-2. **Create a Dockerfile for the backend:**
-   ```dockerfile
-   FROM python:3.11-slim
-   
-   WORKDIR /app
-   
-   COPY requirements.txt .
-   RUN pip install --no-cache-dir -r requirements.txt
-   
-   COPY . .
-   
-   CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
-   ```
-
-3. **Build and deploy:**
+2. **Authenticate and configure:**
    ```powershell
    # Login to GCP
    gcloud auth login
    
    # Set your project
-   gcloud config set project YOUR_PROJECT_ID
+   gcloud config set project <PROJECT_ID>
    
-   # Build and deploy
-   gcloud run deploy virtual-persona-backend \
-     --source . \
-     --platform managed \
-     --region us-central1 \
-     --allow-unauthenticated \
-     --set-env-vars GEMINI_API_KEY=your_key_here
+   # Set default region (example: europe-west8)
+   gcloud config set run/region europe-west8
+   
+   # Enable required APIs
+   gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
    ```
 
-4. **Get your backend URL** (something like: `https://virtual-persona-backend-xxx.run.app`)
+3. **Create Artifact Registry repository** (one-time setup):
+   ```powershell
+   gcloud artifacts repositories create virtual-persona-repo `
+     --repository-format=docker `
+     --location=europe-west8 `
+     --description="Virtual Persona CV Docker images" || echo "Repository may already exist"
+   ```
+
+#### Build & Deploy:
+
+**Note:** The `Dockerfile` is already included in this project and configured for Cloud Run.
+
+1. **Build and tag by commit:**
+   ```powershell
+   # Windows PowerShell
+   $commit = (git rev-parse --short HEAD)
+   gcloud builds submit --tag europe-west8-docker.pkg.dev/<PROJECT_ID>/virtual-persona-repo/virtual-persona-backend:$commit
+   ```
+
+2. **Deploy to Cloud Run:**
+   ```powershell
+   gcloud run deploy virtual-persona-backend `
+     --image europe-west8-docker.pkg.dev/<PROJECT_ID>/virtual-persona-repo/virtual-persona-backend:$commit `
+     --region europe-west8 `
+     --platform managed `
+     --allow-unauthenticated `
+     --port 8000 `
+     --set-env-vars GEMINI_API_KEY=your_gemini_api_key_here,APP_ENV=prod
+   ```
+
+3. **Get your backend URL:**
+   ```powershell
+   gcloud run services describe virtual-persona-backend --region europe-west8 --format="value(status.url)"
+   ```
+
+4. **View logs:**
+   ```powershell
+   # Recent logs
+   gcloud run services logs read virtual-persona-backend --region europe-west8 --limit 50
+   
+   # Live tail (real-time)
+   gcloud beta run services logs tail virtual-persona-backend --region europe-west8
+   ```
+
+5. **Set reasonable resource limits** (optional, for cost optimization):
+   ```powershell
+   # Limit instances and resources
+   gcloud run services update virtual-persona-backend --region europe-west8 --max-instances 3
+   gcloud run services update virtual-persona-backend --region europe-west8 --cpu 1 --memory 512Mi --concurrency 80 --timeout 60
+   ```
+
+#### Important Notes:
+
+- **Port Configuration**: Cloud Run automatically sets the `PORT` environment variable. The Dockerfile is configured to use `${PORT:-8080}`, but you can override with `--port 8000` in the deploy command (as shown above).
+- **Ephemeral Storage**: Local data/persistence is ephemeral in Cloud Run. If you need persistent storage for knowledge base indexes, consider:
+  - Using Google Cloud Storage for `rag.save_index()` / `rag.load_index()`
+  - Using a database (Firestore, Cloud SQL) for persistent data
+- **Environment Variables**: Set sensitive values like `GEMINI_API_KEY` using `--set-env-vars` or via the Cloud Console for better security.
+- **Auto-deploy on commit**: You can set up Cloud Build triggers to automatically build and deploy on git push (see Cloud Build documentation).
+
+#### Quick Reference - Complete Deployment Commands:
+
+```powershell
+# 1. Initial setup (one-time)
+gcloud auth login
+gcloud config set project <PROJECT_ID>
+gcloud config set run/region europe-west8
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+gcloud artifacts repositories create virtual-persona-repo --repository-format=docker --location=europe-west8 --description="Virtual Persona CV Docker images" || echo "Repository exists"
+
+# 2. Build & Deploy (run for each deployment)
+$commit = (git rev-parse --short HEAD)
+gcloud builds submit --tag europe-west8-docker.pkg.dev/<PROJECT_ID>/virtual-persona-repo/virtual-persona-backend:$commit
+gcloud run deploy virtual-persona-backend --image europe-west8-docker.pkg.dev/<PROJECT_ID>/virtual-persona-repo/virtual-persona-backend:$commit --region europe-west8 --platform managed --allow-unauthenticated --port 8000 --set-env-vars GEMINI_API_KEY=your_key_here,APP_ENV=prod
+
+# 3. Get URL
+gcloud run services describe virtual-persona-backend --region europe-west8 --format="value(status.url)"
+
+# 4. View logs
+gcloud run services logs read virtual-persona-backend --region europe-west8 --limit 50
+```
 
 ### Part B: Deploy Frontend to Vercel
 

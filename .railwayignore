@@ -1,0 +1,9 @@
+# Ignore backend Dockerfile so Railway doesn't detect it
+Dockerfile.backend
+*.dockerfile
+venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+

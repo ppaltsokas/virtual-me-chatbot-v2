@@ -37,19 +37,20 @@ $frontendWindow = Start-Process powershell -ArgumentList "-NoExit", "-Command", 
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "  ✅ Both servers are starting!" -ForegroundColor Green
+Write-Host "  Both servers are starting!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Backend:  http://localhost:8000" -ForegroundColor Yellow
 Write-Host "Frontend: http://localhost:3000" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "📝 Two new terminal windows have opened:" -ForegroundColor Cyan
+Write-Host "Two new terminal windows have opened:" -ForegroundColor Cyan
 Write-Host "   - One for the backend (Python/FastAPI)" -ForegroundColor White
 Write-Host "   - One for the frontend (React/Vite)" -ForegroundColor White
 Write-Host ""
-Write-Host "⏳ Wait ~10 seconds, then open:" -ForegroundColor Yellow
-Write-Host "   → http://localhost:3000" -ForegroundColor White
+Write-Host "Wait ~10 seconds, then open:" -ForegroundColor Yellow
+Write-Host "   http://localhost:3000" -ForegroundColor White
 Write-Host ""
-Write-Host "💡 TIP: If you see an old chatbot, press Ctrl+Shift+R" -ForegroundColor Magenta
+Write-Host "TIP: If you see an old chatbot, press Ctrl+Shift+R" -ForegroundColor Magenta
+Write-Host ""
 Write-Host ""
 

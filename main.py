@@ -44,10 +44,13 @@ app = FastAPI(
 
 # Enable CORS for local development and production
 # Get allowed origins from environment or use defaults
-allowed_origins = os.getenv(
+# For production, add your frontend URL to ALLOWED_ORIGINS environment variable
+# Example: ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend-domain.com
+allowed_origins_str = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173"
-).split(",")
+)
+allowed_origins = [origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,
@@ -984,5 +987,6 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     # Use PORT environment variable (for Railway/Cloud Run) or default to 8000
+    # Railway sets PORT automatically, so we read it here
     port = int(os.getenv("PORT", "8000"))
     uvicorn.run(app, host="0.0.0.0", port=port)

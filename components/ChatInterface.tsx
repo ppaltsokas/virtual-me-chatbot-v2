@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Bot, User, Sparkles, X, Trash2 } from 'lucide-react';
 import { createChatSession, ChatSession } from '../services/geminiService';
 import { MessageSender, ChatMessage } from '../types';
-import { INITIAL_CHAT_MESSAGE } from '../constants';
+import { INITIAL_CHAT_MESSAGE, API_URL } from '../constants';
 import ReactMarkdown from 'react-markdown';
 
 interface ChatInterfaceProps {
@@ -359,7 +359,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
                   {msg.images.map((imageFilename, idx) => (
                     <div key={idx} className="rounded-lg overflow-hidden border border-slate-600/50">
                       <img
-                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/kb/images/${imageFilename}`}
+                        src={`${API_URL}/kb/images/${imageFilename}`}
                         alt={`Graph from project documentation`}
                         className="w-full h-auto max-w-full object-contain"
                         onError={(e) => {
