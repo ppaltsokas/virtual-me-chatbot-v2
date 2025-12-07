@@ -1,6 +1,11 @@
-# Ignore backend Dockerfile so Railway doesn't detect it
+# Ignore backend files so Railway doesn't detect Python
 Dockerfile.backend
 *.dockerfile
+requirements.txt
+requirements.txt.backend
+runtime.txt
+runtime.txt.backend
+main.py
 venv/
 __pycache__/
 *.pyc
