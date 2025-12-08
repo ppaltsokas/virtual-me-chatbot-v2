@@ -3,7 +3,7 @@
 # Railway sets PORT environment variable automatically
 
 PORT=${PORT:-3000}
-echo "Starting Vite preview on port $PORT"
+echo "Starting static file server on port $PORT"
 
 # Ensure dist folder exists
 if [ ! -d "dist" ]; then
@@ -11,6 +11,10 @@ if [ ! -d "dist" ]; then
   exit 1
 fi
 
-# Start Vite preview with explicit port
-exec npx vite preview --host 0.0.0.0 --port $PORT
+# List files in dist to verify build
+echo "Files in dist folder:"
+ls -la dist/ | head -10
+
+# Use Node.js static server instead of Vite preview for better Railway compatibility
+exec node server.js
 
