@@ -1,14 +1,17 @@
-# Ignore backend files so Railway doesn't detect Python
+# Ignore ALL backend/Python files so Railway detects Node.js only
 Dockerfile.backend
 *.dockerfile
-requirements.txt
-requirements.txt.backend
-runtime.txt
-runtime.txt.backend
+requirements.txt*
+runtime.txt*
+*.py
 main.py
 venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
 .env
 .env.local
+start.sh
 
