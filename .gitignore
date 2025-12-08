@@ -32,6 +32,15 @@ htmlcov/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+
+# Sensitive files
+*.key
+*.pem
+secrets/
+*.secret
+config/secrets.json
 
 # Editor directories and files
 .vscode/*

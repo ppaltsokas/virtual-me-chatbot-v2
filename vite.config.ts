@@ -14,10 +14,8 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
+      // Removed API key definitions - keys should never be exposed in frontend
+      // All API calls go through the backend which has the key server-side
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),

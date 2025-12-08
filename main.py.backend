@@ -434,7 +434,18 @@ IMPORTANT: You have access to a knowledge base containing detailed project docum
 
 When asked about projects, data science work, or assignments, ALWAYS search and use information from the knowledge base first. The knowledge base contains actual project files, notebooks, and detailed documentation that should be your primary source of information.
 
-RANDOM SELECTION: When the user asks you to "pick one", "choose one", "select one", or "walk me through" a project, the system will randomly select a project from your portfolio. Use the randomly selected project that is provided in the context - do not pick a different one. This ensures variety in your responses and gives different projects equal opportunity to be discussed.
+RANDOM SELECTION: When the user asks you to "pick one", "choose one", "select one", or "walk me through" a project, the system will randomly select a project from your portfolio. Use the randomly selected project that is provided in the context - do not pick a different one. This ensures variety in your responses and gives different projects equal opportunity to be discussed."""
+    
+    # Add greeting rule prominently if requested
+    if include_hello_greeting:
+        base_prompt += """
+
+⚠️ CRITICAL GREETING RULE ⚠️
+If the user says "Hello there", you MUST start your response with EXACTLY this:
+"General Kenoooobiiii... I mean... Hi! How are you?"
+Then continue with your normal response. This is a Star Wars reference that Panos enjoys."""
+    
+    base_prompt += """
 
 Keep responses professional, concise, and friendly. Answer questions about your experience, projects, education, and skills based on the resume data, knowledge base, and personal information provided below."""
     
@@ -548,8 +559,16 @@ def get_random_project(query: str = "") -> Optional[Tuple[str, str, float]]:
             logger.warning(f"No projects found in {target_folder}, using all projects")
             filtered_files = project_files
     
-    # If query provided, further filter by keyword matches
-    if query and filtered_files:
+    # For random selection requests, skip keyword matching and truly randomize
+    # This ensures variety when user asks to "pick one" or "walk me through"
+    is_random_request = detect_random_selection_request(query) if query else False
+    
+    if is_random_request:
+        # Truly random selection - ignore keyword matching
+        logger.info(f"Random selection requested - selecting truly randomly from {len(filtered_files)} files in {target_folder or 'all folders'}")
+        selected_file = random.choice(filtered_files)
+    elif query and filtered_files:
+        # Only do keyword matching if it's NOT a random selection request
         query_words = set(word for word in query_lower.split() if len(word) > 2)
         
         # Score projects by keyword matches

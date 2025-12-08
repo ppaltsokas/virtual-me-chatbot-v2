@@ -6,8 +6,15 @@ Write-Host "  Update Cloud Run API Key" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Your API key
-$API_KEY = "AIzaSyDvUCFIWhYSMVZWgjubzLBqXmz4gKPTRZA"
+# Get API key from environment variable (secure)
+$API_KEY = $env:GEMINI_API_KEY
+if (-not $API_KEY) {
+    Write-Host "ERROR: GEMINI_API_KEY environment variable is not set!" -ForegroundColor Red
+    Write-Host "Please set it before running this script:" -ForegroundColor Yellow
+    Write-Host "  `$env:GEMINI_API_KEY = 'your-api-key-here'" -ForegroundColor White
+    exit 1
+}
+
 $PROJECT_ID = "virtual-persona-cv"  # Update if different
 $SERVICE_NAME = "virtual-persona-backend"
 $REGION = "europe-west8"

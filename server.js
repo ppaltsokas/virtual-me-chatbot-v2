@@ -27,12 +27,14 @@ const mimeTypes = {
 };
 
 const server = http.createServer((req, res) => {
-  console.log(`${req.method} ${req.url}`);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log(`Headers:`, JSON.stringify(req.headers, null, 2));
   
   // Health check endpoint
-  if (req.url === '/health' || req.url === '/healthz') {
+  if (req.url === '/health' || req.url === '/healthz' || req.url === '/_health') {
+    console.log('Health check requested');
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', port: PORT }));
+    res.end(JSON.stringify({ status: 'ok', port: PORT, timestamp: new Date().toISOString() }));
     return;
   }
 
@@ -78,8 +80,18 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
-  console.log(`Serving files from: ${DIST_DIR}`);
+  console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
+  console.log(`✅ Serving files from: ${DIST_DIR}`);
+  console.log(`✅ Health check available at: /health`);
+  console.log(`✅ Ready to accept requests`);
+  
+  // Verify dist folder contents
+  try {
+    const files = fs.readdirSync(DIST_DIR);
+    console.log(`✅ Dist folder contains ${files.length} items:`, files.join(', '));
+  } catch (err) {
+    console.error(`❌ Error reading dist folder:`, err);
+  }
 });
 
 // Handle errors
