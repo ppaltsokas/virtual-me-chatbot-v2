@@ -119,10 +119,10 @@ Virtual Persona CV/
 ## Deployment
 
 ### Backend Deployment
-Use `deploy-backend.ps1` script or manual gcloud commands. See `DEPLOYMENT.md` for details.
+Use `deploy-backend.ps1` script or manual gcloud commands. The script handles building and deploying to Google Cloud Run.
 
 ### Frontend Deployment
-Automatically deploys from GitHub via Railway. See `RAILWAY_DEPLOYMENT_GUIDE.md` for configuration.
+Automatically deploys from GitHub via Railway. Railway detects the Node.js project and uses Railpack to build and deploy.
 
 ## Security
 
@@ -152,13 +152,13 @@ Automatically deploys from GitHub via Railway. See `RAILWAY_DEPLOYMENT_GUIDE.md`
 1. Clone repository
 2. Create `.env.local` with `GEMINI_API_KEY` and `VITE_API_URL`
 3. Install dependencies: `npm install` (frontend), `pip install -r requirements.txt.backend` (backend)
-4. Run locally: `.\start-all.ps1`
-5. Deploy: Use `deploy-backend.ps1` for backend, Railway auto-deploys frontend
+4. Start backend: `python main.py.backend` (or use uvicorn)
+5. Start frontend: `npm run dev`
+6. Deploy: Use `deploy-backend.ps1` for backend, Railway auto-deploys frontend
 
 ## Documentation
 
 - `README.md` - Main project documentation
-- `DEPLOYMENT.md` - Deployment guide
-- `SECURITY.md` - Security guidelines
-- `DEPLOYMENT_HISTORY.md` - Complete deployment history and fixes
+- `PROJECT_OVERVIEW.md` - This file (architecture overview)
+- `SECURITY.md` - Security guidelines and best practices
 
