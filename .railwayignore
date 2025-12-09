@@ -1,5 +1,4 @@
 # Ignore ALL backend/Python files so Railway detects Node.js only
-Dockerfile
 Dockerfile.backend
 *.dockerfile
 requirements.txt*
