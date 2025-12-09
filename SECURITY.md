@@ -4,7 +4,7 @@
 
 ### ✅ Current Security Status
 
-**Your API keys are secure!** Here's what you have implemented:
+**API keys are secure.** Current implementation:
 
 1. **Frontend**: No API keys are exposed
    - Frontend only uses `VITE_API_URL` to connect to backend
@@ -29,7 +29,7 @@
 $env:GEMINI_API_KEY = "your-api-key-here"
 
 # Or create .env.local file (recommended)
-# Copy .env.example to .env.local and fill in your values
+# Copy .env.example to .env.local and add actual values
 ```
 
 #### Linux/Mac:
@@ -64,10 +64,10 @@ echo 'export GEMINI_API_KEY="your-api-key-here"' >> ~/.bashrc
 
 ### 🔍 Checking for Exposed Keys
 
-If you're concerned about exposed keys, check:
+To check for exposed keys:
 
 ```powershell
-# Search for hardcoded API keys in your codebase
+# Search for hardcoded API keys
 git grep "AIzaSy" --exclude-dir=venv --exclude-dir=node_modules
 
 # Check if .env.local is tracked by git
@@ -140,9 +140,9 @@ gcloud run services update virtual-persona-backend `
 
 4. **Review your Git history**:
    - If key was committed, consider rewriting history (advanced)
-   - Or just ensure it's removed from current files
+   - Or remove it from current files
 
 ---
 
-**Remember**: Security is an ongoing process. Always be mindful of where you store sensitive information!
+Security is an ongoing process. Keep sensitive information in environment variables only.
 
