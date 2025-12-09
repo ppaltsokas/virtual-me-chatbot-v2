@@ -53,7 +53,7 @@ echo 'export GEMINI_API_KEY="your-api-key-here"' >> ~/.bashrc
    - Never hardcode keys in scripts or code
 
 3. **Rotate keys if exposed**
-   - If you accidentally commit a key, rotate it immediately
+   - If a key is accidentally committed, rotate it immediately
    - Get a new key from: https://aistudio.google.com/app/apikey
    - Update all environments (local, Cloud Run, Railway, etc.)
 
@@ -86,7 +86,7 @@ These files should never have real API keys:
 
 ### 🛡️ Cloud Run Security
 
-Your backend on Cloud Run is secure:
+Backend on Cloud Run security:
 - API key is stored as an environment variable in Cloud Run
 - Not exposed in logs or responses
 - Only accessible server-side
@@ -94,7 +94,7 @@ Your backend on Cloud Run is secure:
 
 ### 🔄 Updating Keys
 
-To update your API key in Cloud Run:
+To update API key in Cloud Run:
 
 ```powershell
 # Set the new key in environment
@@ -135,10 +135,10 @@ gcloud run services update virtual-persona-backend `
    - Railway: Update environment variables in dashboard
 
 3. **Check for unauthorized usage**:
-   - Monitor your Google Cloud billing
+   - Monitor Google Cloud billing
    - Check API usage in Google AI Studio
 
-4. **Review your Git history**:
+4. **Review Git history**:
    - If key was committed, consider rewriting history (advanced)
    - Or remove it from current files
 
