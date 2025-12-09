@@ -21,7 +21,7 @@ export const RESUME_DATA: ResumeData = {
       role: "AI Operations | RLHF & Model Optimization",
       company: "TaskUs",
       period: "Jun 2024 - Ongoing",
-      description: "Translating fast-changing client policies into production-ready labeling and fine-tuning conversational AI. I participate in calibrations, resolve edge cases, and provide structured feedback on model outputs to improve accuracy and safety. I single-handedly completed a mathematics pilot in one day that secured a new client engagement.",
+      description: "Translating fast-changing client policies into production-ready labeling and fine-tuning conversational AI. I participate in calibrations, resolve edge cases, and provide structured feedback on model outputs to improve accuracy and safety. I support team analytics and identify trends in model–policy misalignment to guide targeted improvements. I have completed internal academies in Team Leadership and Data Science and have played a key role in winning new client work through rapid pilots under short notice.",
       technologies: ["RLHF", "Python", "Data Analysis", "SOP Development", "Quality Assurance"]
     },
     {
@@ -29,7 +29,7 @@ export const RESUME_DATA: ResumeData = {
       role: "Mathematics Tutor",
       company: "Self-Employed / Cramming Schools",
       period: "Sep 2007 - Ongoing",
-      description: "Helping students achieve academic goals by leveraging deep mathematical concepts. I have years of experience managing tight schedules, collaborating with colleagues, and delivering results in demanding environments.",
+      description: "Helping students achieve academic goals by leveraging deep mathematical concepts and breaking complex ideas down to a manageable level. I have years of experience managing tight schedules, collaborating with colleagues, and delivering results in demanding environments.",
       technologies: ["Mathematics", "Teaching", "Communication", "Problem Solving"]
     },
     {
@@ -175,15 +175,15 @@ export const RESUME_DATA: ResumeData = {
   skills: [
     {
       name: "AI & Machine Learning",
-      skills: ["Python", "TensorFlow", "Keras", "Scikit-learn", "Hugging Face", "RLHF", "LLMs", "RAG", "GANs", "RNNs"]
+      skills: ["Python", "TensorFlow", "Keras", "Scikit-learn", "Hugging Face", "RLHF", "LLMs", "RAG", "GANs", "RNNs", "CNNs", "Ensemble Methods", "Feature Engineering", "Prompt Engineering"]
     },
     {
       name: "Data Science & Viz",
-      skills: ["Pandas", "NumPy", "SQL", "R", "Matplotlib", "Seaborn", "Plotly", "Tableau", "Power BI"]
+      skills: ["Pandas", "NumPy", "SQL", "Matplotlib", "Seaborn", "Power BI", "PCA", "Statistical Analysis"]
     },
     {
-      name: "DevOps & Tools",
-      skills: ["Docker", "FastAPI", "Git", "Google Cloud Run", "Jupyter", "PyCharm"]
+      name: "DevOps & Cloud",
+      skills: ["Docker", "FastAPI", "Git", "Google Cloud Run", "Railway", "CI/CD", "Jupyter", "PyCharm", "Cursor"]
     },
     {
       name: "Languages",

@@ -281,14 +281,25 @@ const App: React.FC = () => {
         </footer>
       </div>
 
-      {/* Floating Chat Button (Only visible if chat is closed) */}
-      <button
-        onClick={toggleChat}
-        className={`fixed z-40 bottom-6 right-6 p-4 rounded-full bg-indigo-600 text-white shadow-2xl hover:bg-indigo-500 transition-all duration-300 hover:scale-110 active:scale-95 ${isChatOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
-        aria-label="Open Chat"
-      >
-        <MessageSquare size={24} />
-      </button>
+      {/* Floating Chat Button with Orbiting Stars (Only visible if chat is closed) */}
+      <div className={`fixed z-40 bottom-6 right-6 chat-button-container ${isChatOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'} transition-all duration-300`}>
+        <div className="chat-button-backlight"></div>
+        <div className="star-orbit-container">
+          <div className="star-orbit" style={{ animationDelay: '0s' }}></div>
+          <div className="star-orbit" style={{ animationDelay: '-2s' }}></div>
+          <div className="star-orbit" style={{ animationDelay: '-4s' }}></div>
+          <div className="star-orbit" style={{ animationDelay: '-6s' }}></div>
+          <div className="star-orbit" style={{ animationDelay: '-1s' }}></div>
+          <div className="star-orbit" style={{ animationDelay: '-3s' }}></div>
+        </div>
+        <button
+          onClick={toggleChat}
+          className="relative z-20 p-4 rounded-full bg-indigo-600 text-white shadow-2xl hover:bg-indigo-500 transition-all duration-300 hover:scale-110 active:scale-95"
+          aria-label="Open Chat"
+        >
+          <MessageSquare size={24} />
+        </button>
+      </div>
 
       {/* Chat Interface */}
       <ChatInterface 

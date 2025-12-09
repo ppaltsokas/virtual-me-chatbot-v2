@@ -11,7 +11,7 @@ interface ChatInterfaceProps {
   isMobile: boolean;
 }
 
-// Photo component with fallback
+// Photo component with fallback - circular crop
 const AvatarPhoto: React.FC<{ size?: 'sm' | 'md'; variant?: 'header' | 'message' }> = ({ size = 'md', variant = 'message' }) => {
   const [imageError, setImageError] = useState(false);
   const sizeClasses = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10';
@@ -28,11 +28,11 @@ const AvatarPhoto: React.FC<{ size?: 'sm' | 'md'; variant?: 'header' | 'message'
   }
   
   return (
-    <div className={`${sizeClasses} rounded-full overflow-hidden border-2 border-indigo-500/50 shadow-lg shadow-indigo-500/30 flex-shrink-0`}>
+    <div className={`${sizeClasses} rounded-full overflow-hidden border-2 border-indigo-500/50 shadow-lg shadow-indigo-500/30 flex-shrink-0`} style={{ aspectRatio: '1 / 1' }}>
       <img 
-        src="/panos-photo.jpg" 
-        alt="Panos" 
-        className="w-full h-full object-cover"
+        src="/profile_pic2.jpg" 
+        alt="Virtual Panos" 
+        className="w-full h-full object-cover object-center"
         onError={() => setImageError(true)}
       />
     </div>
@@ -309,7 +309,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
-        {messages.map((msg) => (
+        {messages.filter(msg => msg.text.trim() !== '').map((msg) => (
           <div
             key={msg.id}
             className={`flex gap-3 ${msg.sender === MessageSender.User ? 'justify-end' : 'justify-start'}`}
