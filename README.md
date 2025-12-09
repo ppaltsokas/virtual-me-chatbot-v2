@@ -2,7 +2,7 @@
 
 A modern, interactive portfolio website that combines a traditional CV/resume with an AI-powered chatbot. This application serves as your **online professional presence** where visitors can view your experience, projects, and skills, then have a conversation with an AI version of you that knows about your work, education, and projects.
 
-> **Note:** This project was built with the help of AI tools (primarily Cursor AI). This README is written as a beginner's guide—partly for others learning, but mostly so I remember what I did when I come back to this after a long time! 😄
+> **Note:** This project was built with the help of AI tools (primarily Gemini, ChatGPT, and Cursor AI). This README is written as a beginner's guide, partly for others learning, but mostly so I remember what I did when I come back to this after a long time! 😄
 
 ## 🎯 What This App Is
 
@@ -160,7 +160,7 @@ Instead of a boring static resume, this creates an interactive experience where 
 - **View** images and documentation from your projects
 - **Download** your CV directly
 
-The chatbot reads your actual project PDFs, markdown files, and personal info, so it can give real answers about your work—not generic responses.
+The chatbot reads your actual project PDFs, markdown files, and personal info, so it can give real answers about your work, not generic responses.
 
 > **Fun fact:** The AI was trained on my actual assignments, project reports, and personal summary. It's like having a digital version of me that remembers everything I've worked on!
 
