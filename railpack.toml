@@ -1,6 +1,6 @@
 # Force Railpack to use Node.js
 [phases.setup]
-nixPkgs = ["nodejs-20_x", "npm"]
+nixPkgs = ["nodejs_22"]
 
 [phases.install]
 cmds = ["npm ci"]
@@ -8,6 +8,5 @@ cmds = ["npm ci"]
 [phases.build]
 cmds = ["npm run build"]
 
-[start]
-cmd = "sh start-frontend.sh"
-
+[phases.start]
+cmds = ["sh start-frontend.sh"]
