@@ -1,16 +1,12 @@
 
-// Service to communicate with the Python FastAPI Backend
-
-// Defines the structure expected by ChatInterface
+// Chat service for FastAPI backend communication
 export interface ChatSession {
   sendMessageStream: (params: { message: string }) => AsyncGenerator<{ text: string; images?: string[] }, void, unknown>;
 }
 
-/**
- * Creates a chat session that communicates with the local Python backend.
- */
+// Creates a chat session for backend communication
 export const createChatSession = (): ChatSession => {
-  // Get API URL from environment variable or default to localhost
+  // Get API URL from env or default to localhost
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   
   // Check backend health first
@@ -26,10 +22,10 @@ export const createChatSession = (): ChatSession => {
   return {
     sendMessageStream: async function* ({ message }) {
       try {
-        // Check if backend is available
+        // Check backend health
         const isHealthy = await checkBackendHealth();
         if (!isHealthy) {
-          yield { text: " [Backend Error: The Python backend server is not responding. Please ensure:\n1. The backend is running (python main.py)\n2. It's listening on port 8000\n3. Check the terminal for error messages] " };
+          yield { text: " [Backend Error: Server not responding. Check if backend is running on port 8000] " };
           return;
         }
 
@@ -61,21 +57,21 @@ export const createChatSession = (): ChatSession => {
           const chunkText = decoder.decode(value, { stream: true });
           buffer += chunkText;
           
-          // Check for image markers: [IMAGES:image1.jpg,image2.png]
+          // Parse image markers: [IMAGES:image1.jpg,image2.png]
           const imageMarkerRegex = /\[IMAGES:([^\]]+)\]/;
           let match = buffer.match(imageMarkerRegex);
           
           while (match) {
-            // Extract images from marker
+            // Extract image list
             const imageList = match[1].split(',').map(img => img.trim()).filter(img => img);
             
-            // Get text before the marker
+            // Get text before marker
             const beforeMarker = buffer.substring(0, match.index);
             
-            // Remove the marker and everything before it from buffer
+            // Remove processed marker from buffer
             buffer = buffer.substring(match.index! + match[0].length);
             
-            // Yield text before marker if any
+            // Yield text before marker
             if (beforeMarker.length > 0) {
               yield { text: beforeMarker };
             }
@@ -85,22 +81,22 @@ export const createChatSession = (): ChatSession => {
               yield { text: '', images: imageList };
             }
             
-            // Check for more markers
+            // Check for additional markers
             match = buffer.match(imageMarkerRegex);
           }
         }
         
-        // Yield any remaining buffer
+        // Yield remaining buffer
         if (buffer.length > 0) {
           yield { text: buffer };
         }
       } catch (error) {
         console.error("Error connecting to Python backend:", error);
         
-        // Provide more helpful error messages
+        // Format error message
         let errorMessage = " [Connection Error: ";
         if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-          errorMessage += `Cannot connect to the backend server. Please ensure:\n1. The backend is running: python main.py\n2. It's listening on ${API_URL}\n3. Check that the backend URL is correct] `;
+          errorMessage += `Cannot connect to backend at ${API_URL}. Check if server is running] `;
         } else if (error instanceof Error) {
           errorMessage += `${error.message}] `;
         } else {

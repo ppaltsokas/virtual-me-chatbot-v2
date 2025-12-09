@@ -11,7 +11,7 @@ interface ChatInterfaceProps {
   isMobile: boolean;
 }
 
-// Photo component with fallback - circular crop
+// Avatar component with circular crop and fallback icon
 const AvatarPhoto: React.FC<{ size?: 'sm' | 'md'; variant?: 'header' | 'message' }> = ({ size = 'md', variant = 'message' }) => {
   const [imageError, setImageError] = useState(false);
   const sizeClasses = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10';
@@ -154,7 +154,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
     // Show toasty animation and play sound
     setShowToasty(true);
     if (toastyAudioRef.current) {
-      toastyAudioRef.current.volume = 0.3; // Ensure volume is set to 30%
+      toastyAudioRef.current.volume = 0.3; // Reduced volume for toasty sound
       toastyAudioRef.current.play().catch(err => console.error("Error playing toasty sound:", err));
     }
     
@@ -246,7 +246,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
 
   return (
     <>
-      {/* Toasty Animation - Fixed position relative to viewport */}
+      {/* Toasty animation overlay */}
       {showToasty && (
         <div 
           className="fixed bottom-6 right-6 z-[60]"

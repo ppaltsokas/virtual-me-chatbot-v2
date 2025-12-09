@@ -2,8 +2,8 @@
 # Make sure you've run the initial setup from GCP_SETUP_GUIDE.md first!
 
 # Configuration - UPDATE THESE VALUES
-$PROJECT_ID = "831351726786"  # Your Google Cloud Project ID
-$REGION = "europe-west8"        # Your preferred region
+$PROJECT_ID = "831351726786"
+$REGION = "europe-west8"
 $SERVICE_NAME = "virtual-persona-backend"
 $REPO_NAME = "virtual-persona-repo"
 

@@ -42,10 +42,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for local development and production
-# Get allowed origins from environment or use defaults
-# For production, add your frontend URL to ALLOWED_ORIGINS environment variable
-# Example: ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend-domain.com
+# CORS configuration - reads allowed origins from environment variable
+# Set ALLOWED_ORIGINS env var with comma-separated URLs for production
 allowed_origins_str = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173"

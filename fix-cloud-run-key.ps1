@@ -1,5 +1,5 @@
 ﻿# Fix Cloud Run API Key - Separates GEMINI_API_KEY and APP_ENV correctly
-# Usage: $env:GEMINI_API_KEY = 'your-new-key'; .\fix-cloud-run-key.ps1
+# Updates GEMINI_API_KEY in Cloud Run from environment variable
 # Or it will automatically load from .env.local if it exists
 
 # Load .env.local if it exists
