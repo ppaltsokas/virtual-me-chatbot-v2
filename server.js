@@ -1,5 +1,4 @@
-// Simple static file server for Railway
-// This ensures we read PORT correctly and serve the dist folder
+// Static file server for Railway deployment
 
 import http from 'http';
 import fs from 'fs';
@@ -30,7 +29,7 @@ const server = http.createServer((req, res) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   console.log(`Headers:`, JSON.stringify(req.headers, null, 2));
   
-  // Health check endpoint
+  // Health check
   if (req.url === '/health' || req.url === '/healthz' || req.url === '/_health') {
     console.log('Health check requested');
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -38,26 +37,26 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Determine file path
+  // Resolve file path
   let filePath = req.url === '/' ? '/index.html' : req.url;
   filePath = path.join(DIST_DIR, filePath);
   
-  // Security: prevent directory traversal
+  // Prevent directory traversal
   if (!filePath.startsWith(DIST_DIR)) {
     res.writeHead(403);
     res.end('Forbidden');
     return;
   }
 
-  // Get file extension for MIME type
+  // Get MIME type from extension
   const ext = path.extname(filePath).toLowerCase();
   const contentType = mimeTypes[ext] || 'application/octet-stream';
 
-  // Read and serve file
+  // Serve file
   fs.readFile(filePath, (err, data) => {
     if (err) {
       if (err.code === 'ENOENT') {
-        // File not found - serve index.html for SPA routing
+        // SPA fallback: serve index.html
         const indexPath = path.join(DIST_DIR, 'index.html');
         fs.readFile(indexPath, (err, data) => {
           if (err) {
@@ -85,7 +84,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Health check available at: /health`);
   console.log(`✅ Ready to accept requests`);
   
-  // Verify dist folder contents
+  // Log dist folder contents
   try {
     const files = fs.readdirSync(DIST_DIR);
     console.log(`✅ Dist folder contains ${files.length} items:`, files.join(', '));
@@ -94,7 +93,7 @@ server.listen(PORT, '0.0.0.0', () => {
   }
 });
 
-// Handle errors
+// Error handler
 server.on('error', (err) => {
   console.error('Server error:', err);
   process.exit(1);

@@ -21,13 +21,13 @@ const App: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const { personalInfo, experience, education, projects, skills } = RESUME_DATA;
 
-  // Handle responsive checks
+  // Responsive layout detection
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Open chat by default on desktop after a short delay
+    // Auto-open chat on desktop
     if (window.innerWidth >= 1024) {
         const timer = setTimeout(() => setIsChatOpen(true), 1500);
         return () => clearTimeout(timer);

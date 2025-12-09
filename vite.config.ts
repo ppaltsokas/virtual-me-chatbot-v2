@@ -14,8 +14,7 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       plugins: [react()],
-      // Removed API key definitions - keys should never be exposed in frontend
-      // All API calls go through the backend which has the key server-side
+      // API keys handled server-side only
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
