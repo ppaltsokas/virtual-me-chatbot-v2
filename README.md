@@ -1,6 +1,6 @@
 # Virtual Persona CV - Online Resume & AI Chatbot
 
-A modern, interactive portfolio website that combines a traditional CV/resume with an AI-powered chatbot. This application serves as my **online professional presence** where visitors can view my experience, projects, and skills, then have a conversation with an AI version of me that knows about my work, education, and projects.
+A modern, interactive portfolio website that combines a traditional CV/resume with an AI-powered chatbot. This application serves as your **online professional presence** where visitors can view your experience, projects, and skills, then have a conversation with an AI version of you that knows about your work, education, and projects.
 
 ## 🎯 What This App Is
 
@@ -14,16 +14,16 @@ This is a **two-in-one application**:
    - Contact information
 
 2. **🤖 Virtual Me Chatbot** - An AI assistant that can:
-   - Answer questions about my experience and background
-   - Discuss my projects in detail
-   - Provide insights about my work
-   - Share information from my knowledge base
-   - Show images and documentation from my projects
+   - Answer questions about your experience and background
+   - Discuss your projects in detail
+   - Provide insights about your work
+   - Share information from your knowledge base
+   - Show images and documentation from your projects
 
 ## ✨ Key Features
 
 - **Interactive Portfolio**: Modern, responsive design with smooth animations
-- **AI Chatbot**: Powered by Google Gemini, trained on my actual project files and resume
+- **AI Chatbot**: Powered by Google Gemini, trained on your actual project files and resume
 - **Knowledge Base Integration**: The chatbot has access to:
   - Data Science projects (PDFs, markdown files)
   - Machine Learning assignments and projects
@@ -53,7 +53,7 @@ This is a **two-in-one application**:
 ### The Magic
 When you ask the chatbot a question:
 1. Your question is sent to the FastAPI backend
-2. The backend searches through my knowledge base for relevant information
+2. The backend searches through your knowledge base for relevant information
 3. It builds a context with relevant project files and personal data
 4. Google Gemini generates a response based on that context
 5. The response streams back to you in real-time
@@ -146,15 +146,15 @@ virtual-me-chatbot-v2/
 
 ## 📝 What Was Built
 
-This application was created to serve as a modern, interactive way to showcase my professional profile. Instead of a static resume, visitors can:
+This application serves as a modern, interactive way to showcase your professional profile. Instead of a static resume, visitors can:
 
-- **Browse** my experience and projects
-- **Chat** with an AI version of me
-- **Ask questions** about my work and get detailed, accurate answers
+- **Browse** your experience and projects
+- **Chat** with an AI version of you
+- **Ask questions** about your work and get detailed, accurate answers
 - **View** project documentation and images
-- **Download** my CV directly
+- **Download** your CV directly
 
-The chatbot is trained on my actual project files, assignments, and personal information, so it can provide authentic, detailed responses about my work and experience.
+The chatbot is trained on your actual project files, assignments, and personal information, so it can provide authentic, detailed responses about your work and experience.
 
 ## 🔒 Security & Privacy
 
@@ -165,8 +165,8 @@ The chatbot is trained on my actual project files, assignments, and personal inf
 
 ## 📚 Documentation
 
-- **START_HERE.md** - Quick start guide with troubleshooting
-- **SESSION_NOTES.md** - Detailed technical documentation of the build process
+- **PROJECT_OVERVIEW.md** - Project architecture and overview
+- **SECURITY.md** - Security guidelines and best practices
 
 ## 🤝 Contributing
 
@@ -186,10 +186,6 @@ This project is for personal use.
 
 ---
 
-**Live Demo**: https://www.ppaltsokas.com (Coming Soon - Setting up custom domain)
+**Live Demo**: https://virtual-me-chatbot-v2-production.up.railway.app
 
 **Repository**: https://github.com/ppaltsokas/virtual-me-chatbot-v2
-
-## 🌐 Deployment
-
-This app is deployed and accessible online. For custom domain setup instructions, see [CUSTOM_DOMAIN.md](./CUSTOM_DOMAIN.md).

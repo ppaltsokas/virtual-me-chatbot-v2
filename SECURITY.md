@@ -4,7 +4,7 @@
 
 ### ✅ Current Security Status
 
-**Your API keys are secure!** Here's what we've implemented:
+**Your API keys are secure!** Here's what you have implemented:
 
 1. **Frontend**: No API keys are exposed
    - Frontend only uses `VITE_API_URL` to connect to backend
