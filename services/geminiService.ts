@@ -1,7 +1,7 @@
 
 // Chat service for FastAPI backend communication
 export interface ChatSession {
-  sendMessageStream: (params: { message: string }) => AsyncGenerator<{ text: string; images?: string[] }, void, unknown>;
+  sendMessageStream: (params: { message: string; sessionId?: string }) => AsyncGenerator<{ text: string; images?: string[] }, void, unknown>;
 }
 
 // Creates a chat session for backend communication
@@ -20,7 +20,7 @@ export const createChatSession = (): ChatSession => {
   };
 
   return {
-    sendMessageStream: async function* ({ message }) {
+    sendMessageStream: async function* ({ message, sessionId = "default" }) {
       try {
         // Check backend health
         const isHealthy = await checkBackendHealth();
@@ -34,7 +34,7 @@ export const createChatSession = (): ChatSession => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, session_id: sessionId }),
         });
 
         if (!response.ok) {

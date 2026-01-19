@@ -45,9 +45,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
   const [isLoading, setIsLoading] = useState(false);
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   const [showToasty, setShowToasty] = useState(false);
+  // Generate unique session ID for conversation memory
+  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const toastyAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Project lists for expandable buttons
+  const mlProjects = [
+    { id: 'hw1', name: 'HW1: Wine Quality Analysis', prompt: 'Tell me about HW1: Wine Quality Analysis with Linear Regression. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'hw2', name: 'HW2: Polynomial Regression', prompt: 'Tell me about HW2: Polynomial Regression and Learning Curves. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'hw3', name: 'HW3: Decision Trees & Ensembles', prompt: 'Tell me about HW3: Decision Trees, Ensemble Models, and Dimensionality Reduction. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'hw4', name: 'HW4: Neural Networks', prompt: 'Tell me about HW4: Neural Networks on Fashion MNIST. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'hw5', name: 'HW5: Clustering', prompt: 'Tell me about HW5: Unsupervised Learning and Clustering. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'hw6', name: 'HW6: Autoencoders & GANs', prompt: 'Tell me about HW6: Autoencoders and Generative Adversarial Networks. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+  ];
+
+  const dataScienceProjects = [
+    { id: 'nobel', name: 'Nobel Prizes Analysis', prompt: 'Tell me about your Nobel Prizes Analysis project analyzing Nobel laureates and Alfred Nobel\'s legacy. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'space', name: 'Space Missions Analysis', prompt: 'Tell me about your Space Missions Analysis project analyzing space race missions and launches since 1957. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'movie', name: 'Movie Budget Analysis', prompt: 'Tell me about your Movie Budgets and Financial Performance project analyzing film budgets and box office revenue. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'regression', name: 'Multivariable Regression', prompt: 'Tell me about your Multivariable Regression and Valuation Model project on Boston Housing Prices. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'handwashing', name: 'Handwashing Analysis', prompt: 'Tell me about your Handwashing and Deaths at Childbirth project analyzing Dr Semmelweis and Vienna General Hospital data. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+    { id: 'fatal', name: 'Fatal Force Analysis', prompt: 'Tell me about your Fatal Force Analysis project. Walk me through it end-to-end like I\'m a hiring manager. Include photos from the project and Panos\' markdown cells with his insights. You can use technical terms.' },
+  ];
+
+  const aiProjects = [
+    { id: 'gaia', name: 'GAIA Agent', prompt: 'Tell me about your GAIA Agent project - the multi-tool AI agent for complex question answering using LangGraph, LangChain, and multiple tools. Walk me through it end-to-end like I\'m a hiring manager. Include details about the architecture, tools, and Panos\' implementation insights. You can use technical terms.' },
+    { id: 'photo-manager', name: 'AI Photo Manager', prompt: 'Tell me about your AI Photo Gallery Manager project - the local photo manager that uses AI vision models for semantic search and image management. Walk me through it end-to-end like I\'m a hiring manager. Include details about the architecture, AI providers, and Panos\' implementation insights. You can use technical terms.' },
+  ];
 
   // Initialize chat session once
   useEffect(() => {
@@ -95,7 +122,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
     setMessages(prev => [...prev, userMsg]);
 
     try {
-      const result = await chatSession.sendMessageStream({ message: userText });
+      const result = await chatSession.sendMessageStream({ 
+        message: userText,
+        sessionId: sessionId 
+      });
       
       // Create placeholder for AI response
       const aiMsgId = (Date.now() + 1).toString();
@@ -141,7 +171,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
     } finally {
       setIsLoading(false);
     }
-  }, [input, chatSession, isLoading]);
+  }, [input, chatSession, isLoading, sessionId]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -191,7 +221,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
     setMessages(prev => [...prev, userMsg]);
 
     try {
-      const result = await chatSession.sendMessageStream({ message: prompt });
+      const result = await chatSession.sendMessageStream({ 
+        message: prompt,
+        sessionId: sessionId 
+      });
       
       // Create placeholder for AI response
       const aiMsgId = (Date.now() + 1).toString();
@@ -237,7 +270,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
     } finally {
       setIsLoading(false);
     }
-  }, [chatSession, isLoading]);
+  }, [chatSession, isLoading, sessionId]);
 
   // Classes for responsiveness - dynamic width that adapts to viewport
   const containerClasses = isMobile
@@ -398,28 +431,93 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
 
       {/* Quick Question Buttons */}
       <div className="px-4 pt-3 pb-2 border-t border-slate-700 bg-slate-800/50">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => handleButtonClick("Pick one of your machine learning projects and walk me through it end-to-end like I'm a hiring manager. Include photos from the project and Panos' markdown cells with his insights. You can use technical terms.")}
-            disabled={isLoading}
-            className="px-3 py-1.5 text-xs font-medium bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 rounded-lg border border-indigo-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            ML Project
-          </button>
-          <button
-            onClick={() => handleButtonClick("Pick one of your Data Science projects and walk me through it end-to-end like I'm a hiring manager. Include photos from the project and Panos' markdown cells with his insights. You can use technical terms.")}
-            disabled={isLoading}
-            className="px-3 py-1.5 text-xs font-medium bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 rounded-lg border border-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Data Science Project
-          </button>
-          <button
-            onClick={() => handleButtonClick("Talk to me in full detail about a project where you built or evaluated an AI agent. Explain the tools, architecture, and what you learned.")}
-            disabled={isLoading}
-            className="px-3 py-1.5 text-xs font-medium bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg border border-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            AI Projects
-          </button>
+        <div className="flex flex-col gap-2">
+          {/* ML Projects Button */}
+          <div>
+            <button
+              onClick={() => setExpandedCategory(expandedCategory === 'ml' ? null : 'ml')}
+              disabled={isLoading}
+              className="w-full px-3 py-2 text-xs font-medium bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 rounded-lg border border-indigo-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
+            >
+              <span>ML Projects</span>
+              <span className="text-indigo-400">{expandedCategory === 'ml' ? '▼' : '▶'}</span>
+            </button>
+            {expandedCategory === 'ml' && (
+              <div className="mt-2 ml-4 space-y-1">
+                {mlProjects.map(project => (
+                  <button
+                    key={project.id}
+                    onClick={() => {
+                      setExpandedCategory(null);
+                      handleButtonClick(project.prompt);
+                    }}
+                    disabled={isLoading}
+                    className="w-full text-left px-3 py-1.5 text-xs font-medium bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-200 rounded-md border border-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {project.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Data Science Projects Button */}
+          <div>
+            <button
+              onClick={() => setExpandedCategory(expandedCategory === 'ds' ? null : 'ds')}
+              disabled={isLoading}
+              className="w-full px-3 py-2 text-xs font-medium bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 rounded-lg border border-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
+            >
+              <span>Data Science Projects</span>
+              <span className="text-emerald-400">{expandedCategory === 'ds' ? '▼' : '▶'}</span>
+            </button>
+            {expandedCategory === 'ds' && (
+              <div className="mt-2 ml-4 space-y-1">
+                {dataScienceProjects.map(project => (
+                  <button
+                    key={project.id}
+                    onClick={() => {
+                      setExpandedCategory(null);
+                      handleButtonClick(project.prompt);
+                    }}
+                    disabled={isLoading}
+                    className="w-full text-left px-3 py-1.5 text-xs font-medium bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-200 rounded-md border border-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {project.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* AI Projects Button */}
+          <div>
+            <button
+              onClick={() => setExpandedCategory(expandedCategory === 'ai' ? null : 'ai')}
+              disabled={isLoading}
+              className="w-full px-3 py-2 text-xs font-medium bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg border border-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
+            >
+              <span>AI Projects</span>
+              <span className="text-purple-400">{expandedCategory === 'ai' ? '▼' : '▶'}</span>
+            </button>
+            {expandedCategory === 'ai' && (
+              <div className="mt-2 ml-4 space-y-1">
+                {aiProjects.map(project => (
+                  <button
+                    key={project.id}
+                    onClick={() => {
+                      setExpandedCategory(null);
+                      handleButtonClick(project.prompt);
+                    }}
+                    disabled={isLoading}
+                    className="w-full text-left px-3 py-1.5 text-xs font-medium bg-purple-600/10 hover:bg-purple-600/20 text-purple-200 rounded-md border border-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {project.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

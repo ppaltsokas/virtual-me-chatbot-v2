@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 import PyPDF2
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import requests
 import re
@@ -18,6 +18,7 @@ import random
 from PIL import Image
 import io
 import base64
+import threading
 
 # Configure logging first
 logging.basicConfig(
@@ -102,6 +103,13 @@ HACKING_KEYWORDS = (
 first_messages: set = set()  # Track by message hash
 # Track sessions that have used the "Hello there" greeting
 hello_there_sessions: set = set()  # Track by session identifier
+
+# Store active chat sessions (session_id -> ChatSession)
+chat_sessions: Dict[str, genai.ChatSession] = {}
+# Store session timestamps for cleanup
+session_timestamps: Dict[str, datetime] = {}
+# Lock for thread-safe session access
+session_lock = threading.Lock()
 
 def should_alert(message: str, message_hash: Optional[str] = None) -> Optional[str]:
     """
@@ -371,6 +379,27 @@ def load_knowledge_base():
                 except Exception as e:
                     logger.warning(f"Error extracting images from {relative_path_str}: {e}. Continuing without images.")
                     # Continue loading the PDF text even if image extraction fails
+            
+            # For markdown files, find associated PNG images in the same folder
+            if file_path.suffix.lower() == '.md':
+                try:
+                    # Get the folder containing this markdown file
+                    md_folder = file_path.parent
+                    # Find all PNG images in the same folder
+                    png_files = list(md_folder.glob('*.png'))
+                    if png_files:
+                        # Store relative paths to images
+                        image_paths = []
+                        for png_file in png_files:
+                            # Get relative path from KB_FOLDER
+                            png_relative = png_file.relative_to(KB_FOLDER)
+                            png_relative_str = str(png_relative).replace('\\', '/')
+                            image_paths.append(png_relative_str)
+                        kb_images[relative_path_str] = image_paths
+                        kb_metadata[relative_path_str]['images'] = len(image_paths)
+                        logger.info(f"Found {len(image_paths)} PNG images for {relative_path_str}")
+                except Exception as e:
+                    logger.warning(f"Error finding images for {relative_path_str}: {e}")
     
     logger.info(f"Loaded {len(knowledge_base)} documents into knowledge base.")
     return len(knowledge_base)
@@ -407,6 +436,18 @@ def load_persona_data():
     logger.info(f"Loaded {len(persona_data)} persona documents.")
     return len(persona_data)
 
+def cleanup_old_sessions():
+    """Clean up chat sessions older than 1 hour."""
+    with session_lock:
+        cutoff = datetime.now() - timedelta(hours=1)
+        expired = [sid for sid, ts in session_timestamps.items() if ts < cutoff]
+        for sid in expired:
+            chat_sessions.pop(sid, None)
+            session_timestamps.pop(sid, None)
+            logger.info(f"Cleaned up expired session: {sid}")
+        if expired:
+            logger.info(f"Cleaned up {len(expired)} expired session(s)")
+
 def build_system_prompt(include_hello_greeting: bool = True) -> str:
     """Build system prompt from base prompt and persona data from me folder.
     
@@ -428,11 +469,19 @@ Key projects:
 
 IMPORTANT: You have access to a knowledge base containing detailed project documents in the /kb folder, including:
 - Data Science projects in the Data_Science_projects folder (Boston House Prices, Nobel Prize Analysis, Space Missions, Movie Budgets, Handwashing Analysis)
-- ML projects and assignments in the ML_projects folder
+- ML projects and assignments in the ML_projects folder, organized in subfolders:
+  * HW1: Wine Quality Analysis with Linear Regression
+  * HW2: Polynomial Regression and Learning Curves
+  * HW3: Decision Trees, Ensemble Models, and Dimensionality Reduction
+  * HW4: Neural Networks on Fashion MNIST
+  * HW5: Unsupervised Learning and Clustering
+  * HW6: Autoencoders and Generative Adversarial Networks (GANs)
+- AI projects in the AI_projects folder:
+  * GAIA Agent: Multi-tool AI agent for complex question answering using LangGraph, LangChain, and multiple specialized tools
 
 When asked about projects, data science work, or assignments, ALWAYS search and use information from the knowledge base first. The knowledge base contains actual project files, notebooks, and detailed documentation that should be your primary source of information.
 
-RANDOM SELECTION: When the user asks you to "pick one", "choose one", "select one", or "walk me through" a project, the system will randomly select a project from your portfolio. Use the randomly selected project that is provided in the context - do not pick a different one. This ensures variety in your responses and gives different projects equal opportunity to be discussed."""
+IMPORTANT: When the user asks about a SPECIFIC project by name (e.g., "GAIA Agent", "Photo Manager", "HW1", "Nobel Prize", etc.), you MUST use that exact project. The system will provide the relevant project information in the context. ONLY use random selection if the user explicitly asks for a random project (e.g., "pick a random project", "choose any project")."""
     
     # Add greeting rule prominently if requested
     if include_hello_greeting:
@@ -500,21 +549,40 @@ Keep responses professional, concise, and friendly. Answer questions about your 
     return base_prompt
 
 def detect_random_selection_request(query: str) -> bool:
-    """Detect if the user wants a random selection of projects."""
+    """Detect if the user wants a random selection of projects.
+    Only triggers on explicit random/any project requests, not when a specific project is mentioned.
+    """
     query_lower = query.lower()
-    random_keywords = [
-        "pick one", "choose one", "select one", "pick a", "choose a", "select a",
-        "random", "any one", "any project", "one of your", "one of the",
-        "walk me through", "show me", "tell me about one"
+    
+    # Check if a specific project is mentioned - if so, NEVER treat as random
+    specific_project_indicators = [
+        "gaia", "photo manager", "photo gallery", "nobel", "space mission", 
+        "movie budget", "multivariable regression", "boston housing", "handwashing",
+        "fatal force", "hw1", "hw2", "hw3", "hw4", "hw5", "hw6", "wine quality",
+        "polynomial regression", "decision tree", "neural network", "fashion mnist",
+        "clustering", "autoencoder", "gan", "gans"
     ]
-    return any(keyword in query_lower for keyword in random_keywords)
+    
+    # If specific project mentioned, never treat as random
+    if any(indicator in query_lower for indicator in specific_project_indicators):
+        return False
+    
+    # Only trigger on EXPLICIT random selection requests
+    explicit_random_keywords = [
+        "pick a random", "choose a random", "select a random", "random project",
+        "any random", "pick any", "choose any", "select any", "surprise me",
+        "pick one randomly", "choose one randomly", "select one randomly"
+    ]
+    
+    # Check for explicit random requests
+    return any(keyword in query_lower for keyword in explicit_random_keywords)
 
 def get_project_files() -> List[str]:
     """Get all project files from the knowledge base."""
     project_files = []
     for filename in knowledge_base.keys():
-        # Filter for project files (Data_Science_projects or ML_projects folders)
-        if 'Data_Science_projects' in filename or 'ML_projects' in filename:
+        # Filter for project files (Data_Science_projects, ML_projects, or AI_projects folders)
+        if 'Data_Science_projects' in filename or 'ML_projects' in filename or 'AI_projects' in filename:
             project_files.append(filename)
     return project_files
 
@@ -538,7 +606,8 @@ def get_random_project(query: str = "") -> Optional[Tuple[str, str, float]]:
         "machine learning", "ml", "ml project", "machine learning project",
         "deep learning", "neural network", "model training", "algorithm",
         "gan", "autoencoder", "rnn", "gru", "svm", "gradient boosting",
-        "classification", "regression", "supervised learning"
+        "classification", "regression", "supervised learning",
+        "hw1", "hw2", "hw3", "hw4", "hw5", "hw6", "homework", "assignment"
     ]
     
     if any(keyword in query_lower for keyword in data_science_keywords):
@@ -602,11 +671,67 @@ def get_random_project(query: str = "") -> Optional[Tuple[str, str, float]]:
     
     return (selected_file, content_chunk, 100.0)  # High score to indicate it's selected
 
+def extract_project_metadata(filename: str, content: str) -> Dict[str, str]:
+    """Extract project metadata from filename and content headers."""
+    metadata = {
+        'title': '',
+        'keywords': [],
+        'dataset': '',
+        'project_type': ''
+    }
+    
+    # Extract title from filename (remove extension and path)
+    filename_clean = Path(filename).stem.replace('_', ' ').replace('-', ' ')
+    metadata['title'] = filename_clean
+    
+    # Extract from first 200 lines for project description
+    first_lines = content[:5000].lower()
+    lines = content.split('\n')[:50]
+    
+    # Look for project title in headers (# Title or ## Title)
+    for line in lines:
+        if line.strip().startswith('#'):
+            # Extract header text
+            header_text = re.sub(r'^#+\s*', '', line.strip())
+            if len(header_text) > 5 and len(header_text) < 100:
+                metadata['title'] = header_text
+                break
+    
+    # Extract distinguishing keywords from first 100 lines
+    # Look for dataset names, project types, etc.
+    distinguishing_keywords = []
+    if 'boston' in first_lines:
+        distinguishing_keywords.append('boston')
+        metadata['dataset'] = 'boston'
+    if 'wine' in first_lines and 'quality' in first_lines:
+        distinguishing_keywords.append('wine')
+        distinguishing_keywords.append('wine quality')
+        metadata['dataset'] = 'wine'
+    if 'fashion' in first_lines and 'mnist' in first_lines:
+        distinguishing_keywords.append('fashion mnist')
+        metadata['dataset'] = 'fashion_mnist'
+    if 'mnist' in first_lines and 'fashion' not in first_lines:
+        distinguishing_keywords.append('mnist')
+        metadata['dataset'] = 'mnist'
+    if 'gaia' in first_lines.lower():
+        distinguishing_keywords.append('gaia')
+        metadata['project_type'] = 'ai agent'
+    if ('photo' in first_lines.lower() and ('manager' in first_lines.lower() or 'gallery' in first_lines.lower())) or 'ai photo' in first_lines.lower():
+        distinguishing_keywords.append('photo manager')
+        distinguishing_keywords.append('photo gallery')
+        metadata['project_type'] = 'photo management'
+    if 'langgraph' in first_lines.lower() or 'langchain' in first_lines.lower():
+        distinguishing_keywords.append('langgraph')
+        distinguishing_keywords.append('langchain')
+        distinguishing_keywords.append('ai agent')
+    
+    metadata['keywords'] = distinguishing_keywords
+    return metadata
+
 def search_knowledge_base(query: str, max_results: int = 3, random_selection: bool = False) -> List[Tuple[str, str, float]]:
     """
-    Search the knowledge base for relevant content with improved relevance scoring.
-    If random_selection is True, randomly selects projects instead of using relevance.
-    Returns list of (filename, relevant_text_chunk, relevance_score) tuples.
+    Advanced knowledge base search with precise project matching.
+    Prioritizes exact filename matches, project metadata, and uses negative keyword detection.
     """
     if not knowledge_base:
         return []
@@ -622,26 +747,202 @@ def search_knowledge_base(query: str, max_results: int = 3, random_selection: bo
     query_lower = query.lower().strip()
     query_words = set(word for word in query_lower.split() if len(word) > 2)  # Filter short words
     
-    if not query_words:
+    # Extract key phrases from query (2-4 word phrases)
+    query_phrases = []
+    words_list = query_lower.split()
+    for i in range(len(words_list) - 1):
+        # 2-word phrases
+        phrase = f"{words_list[i]} {words_list[i+1]}"
+        if len(phrase.replace(' ', '')) > 4:
+            query_phrases.append(phrase)
+    for i in range(len(words_list) - 2):
+        # 3-word phrases
+        phrase = f"{words_list[i]} {words_list[i+1]} {words_list[i+2]}"
+        if len(phrase.replace(' ', '')) > 6:
+            query_phrases.append(phrase)
+    
+    # Special handling for HW queries (hw1, hw2, hw3, etc.)
+    hw_match = None
+    hw_num = None
+    for word in query_words:
+        if word.startswith('hw') and len(word) <= 4:  # hw1, hw2, hw3, etc.
+            hw_num = word[2:] if len(word) > 2 else None
+            if hw_num and hw_num.isdigit():
+                hw_match = f"hw{hw_num}"
+                break
+    
+    # Also check the full query for "hw 1", "hw 2", etc.
+    if not hw_match:
+        hw_pattern = re.search(r'hw\s*(\d+)', query_lower)
+        if hw_pattern:
+            hw_num = hw_pattern.group(1)
+            hw_match = f"hw{hw_num}"
+    
+    # Extract distinguishing keywords from query
+    query_distinguishing = []
+    if 'boston' in query_lower:
+        query_distinguishing.append('boston')
+    if 'wine' in query_lower and 'quality' in query_lower:
+        query_distinguishing.append('wine')
+    if 'house' in query_lower and 'price' in query_lower:
+        query_distinguishing.append('house price')
+    if 'housing' in query_lower:
+        query_distinguishing.append('housing')
+    if 'gaia' in query_lower:
+        query_distinguishing.append('gaia')
+    if 'photo' in query_lower and ('manager' in query_lower or 'gallery' in query_lower):
+        query_distinguishing.append('photo manager')
+    if 'langgraph' in query_lower or 'langchain' in query_lower:
+        query_distinguishing.append('ai agent')
+    
+    if not query_words and not hw_match:
         return []
     
     results = []
     
     for filename, content in knowledge_base.items():
+        filename_lower = filename.lower()
+        filename_clean = filename_lower.replace('_', ' ').replace('-', ' ').replace('.md', '').replace('.pdf', '')
         content_lower = content.lower()
+        first_500_chars = content[:500].lower()
+        
+        # Extract project metadata
+        metadata = extract_project_metadata(filename, content)
+        
+        # NEGATIVE KEYWORD DETECTION - Penalize mismatches
+        negative_penalty = 0
+        if query_distinguishing:
+            # Data Science project mismatches
+            if 'boston' in query_distinguishing and 'wine' in metadata['keywords']:
+                negative_penalty = -200
+            elif 'wine' in query_distinguishing and 'boston' in metadata['keywords']:
+                negative_penalty = -200
+            elif 'boston' in query_distinguishing and 'boston' not in metadata['keywords'] and 'boston' not in first_500_chars:
+                negative_penalty = -100
+            elif 'wine' in query_distinguishing and 'wine' not in metadata['keywords'] and 'wine' not in first_500_chars:
+                negative_penalty = -100
+            
+            # AI project mismatches
+            if 'gaia' in query_distinguishing and 'photo manager' in metadata['keywords']:
+                negative_penalty = -200
+            elif 'photo manager' in query_distinguishing and 'gaia' in metadata['keywords']:
+                negative_penalty = -200
+            elif 'gaia' in query_distinguishing and 'gaia' not in metadata['keywords'] and 'gaia' not in first_500_chars:
+                negative_penalty = -100
+            elif 'photo manager' in query_distinguishing and 'photo manager' not in metadata['keywords'] and 'photo' not in first_500_chars:
+                negative_penalty = -100
+            
+            # AI vs Data Science mismatches
+            if 'gaia' in query_distinguishing and 'nobel' in filename_lower:
+                negative_penalty = -200
+            if 'photo manager' in query_distinguishing and ('nobel' in filename_lower or 'space' in filename_lower or 'movie' in filename_lower):
+                negative_penalty = -200
         
         # Calculate relevance score
-        # 1. Word frequency in document
-        word_frequency = sum(content_lower.count(word) for word in query_words)
+        # 1. EXACT FILENAME PHRASE MATCHING (HIGHEST PRIORITY)
+        filename_score = 0
         
-        # 2. Unique word matches
-        unique_matches = len(set(query_words) & set(content_lower.split()))
+        if hw_match and hw_match in filename_lower:
+            filename_score = 500  # Very high score for HW matches in filename
+        elif hw_match:
+            # Check if HW number appears in folder path (e.g., "HW1/", "HW2/")
+            if f"hw{hw_num}" in filename_lower or f"hw-{hw_num}" in filename_lower:
+                filename_score = 500
+        else:
+            # Special handling for AI projects - check FIRST before other matches
+            if 'gaia' in query_lower:
+                if 'gaia' in filename_lower:
+                    filename_score = 500  # Very high score for GAIA matches
+                    logger.debug(f"GAIA filename match found: {filename}")
+                elif 'ppaltsokas_gaia_agent' in filename_lower:
+                    filename_score = 500
+                    logger.debug(f"GAIA agent path match found: {filename}")
+            elif 'photo manager' in query_lower or 'photo gallery' in query_lower or 'ai photo' in query_lower:
+                if 'photo' in filename_lower and ('manager' in filename_lower or 'gallery' in filename_lower):
+                    filename_score = 500
+                    logger.debug(f"Photo manager filename match found: {filename}")
+                elif 'ai-photo-manager' in filename_lower:
+                    filename_score = 500
+                    logger.debug(f"Photo manager path match found: {filename}")
+            
+            # Check for exact phrase matches in filename (highest priority)
+            if filename_score == 0:
+                exact_phrase_in_filename = False
+                for phrase in query_phrases:
+                    phrase_clean = phrase.replace(' ', '_').replace(' ', '-')
+                    if phrase in filename_clean or phrase_clean in filename_lower:
+                        filename_score = 400  # Very high score for exact phrase
+                        exact_phrase_in_filename = True
+                        break
+                
+                if not exact_phrase_in_filename:
+                    # Check if ALL significant query words appear in filename
+                    significant_words = [w for w in query_words if len(w) > 4]  # Words longer than 4 chars
+                    if significant_words:
+                        words_in_filename = sum(1 for word in significant_words if word in filename_clean)
+                        if words_in_filename == len(significant_words):
+                            filename_score = 300  # All significant words match
+                        elif words_in_filename > 0:
+                            filename_score = words_in_filename * 50  # Partial match
+                
+                # Boost for any query word matches in filename
+                filename_word_matches = sum(1 for word in query_words if word in filename_clean)
+                if filename_score == 0:
+                    filename_score = filename_word_matches * 30
         
-        # 3. Phrase matching (exact query phrase)
-        phrase_match = 1 if query_lower in content_lower else 0
+        # 2. PROJECT TITLE MATCHING (from metadata)
+        title_score = 0
+        if metadata['title']:
+            title_lower = metadata['title'].lower()
+            for phrase in query_phrases:
+                if phrase in title_lower:
+                    title_score = 200
+                    break
+            if title_score == 0:
+                title_word_matches = sum(1 for word in query_words if word in title_lower)
+                title_score = title_word_matches * 25
         
-        # Combined relevance score
-        relevance_score = word_frequency * 0.4 + unique_matches * 10 + phrase_match * 50
+        # 3. DISTINGUISHING KEYWORD MATCHING
+        distinguishing_score = 0
+        if query_distinguishing and metadata['keywords']:
+            matching_keywords = set(query_distinguishing) & set(metadata['keywords'])
+            if matching_keywords:
+                distinguishing_score = len(matching_keywords) * 150
+        
+        # 4. PHRASE MATCHING IN CONTENT (exact query phrase)
+        phrase_match = 0
+        if query_lower in content_lower:
+            phrase_match = 100
+        else:
+            # Check for key phrases
+            for phrase in query_phrases:
+                if phrase in content_lower:
+                    phrase_match = 80
+                    break
+        
+        # 5. HEADER MATCHING (check first 50 lines for project titles)
+        header_score = 0
+        first_lines = '\n'.join(content.split('\n')[:50]).lower()
+        for phrase in query_phrases:
+            if phrase in first_lines:
+                header_score = 60
+                break
+        
+        # 6. Word frequency in document content (lower weight)
+        word_frequency = sum(content_lower.count(word) for word in query_words) * 0.3
+        
+        # 7. Unique word matches in content
+        unique_matches = len(set(query_words) & set(content_lower.split())) * 5
+        
+        # Combined relevance score with negative penalty
+        relevance_score = (filename_score + 
+                          title_score +
+                          distinguishing_score +
+                          phrase_match + 
+                          header_score +
+                          word_frequency + 
+                          unique_matches +
+                          negative_penalty)
         
         if relevance_score > 0:
             # Extract relevant chunks
@@ -670,6 +971,29 @@ def search_knowledge_base(query: str, max_results: int = 3, random_selection: bo
     
     # Sort by relevance score and return top results
     results.sort(key=lambda x: x[2], reverse=True)
+    
+    # Log top results for debugging
+    if results:
+        logger.info(f"Search results for '{query[:100]}':")
+        for i, (fname, _, score) in enumerate(results[:3], 1):
+            logger.info(f"  {i}. {fname} (score: {score:.1f})")
+    
+    # CRITICAL: If query mentions a specific project, filter to only that project
+    # This prevents returning wrong projects even if they score high
+    query_lower_for_filter = query.lower()
+    if 'gaia' in query_lower_for_filter and results:
+        # Filter to only GAIA-related files
+        gaia_results = [r for r in results if 'gaia' in r[0].lower()]
+        if gaia_results:
+            logger.info(f"Filtered to GAIA projects: {[r[0] for r in gaia_results]}")
+            return gaia_results[:max_results]
+    elif ('photo manager' in query_lower_for_filter or 'photo gallery' in query_lower_for_filter or 'ai photo' in query_lower_for_filter) and results:
+        # Filter to only Photo Manager files
+        photo_results = [r for r in results if 'photo' in r[0].lower() and ('manager' in r[0].lower() or 'gallery' in r[0].lower())]
+        if photo_results:
+            logger.info(f"Filtered to Photo Manager projects: {[r[0] for r in photo_results]}")
+            return photo_results[:max_results]
+    
     return results[:max_results]
 
 # Load knowledge base and persona data on startup
@@ -687,10 +1011,11 @@ except Exception as e:
 
 class ChatRequest(BaseModel):
     message: str
+    session_id: Optional[str] = "default"
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
-    """Chat endpoint with knowledge base integration."""
+    """Chat endpoint with knowledge base integration and conversation memory."""
     try:
         if not GEMINI_API_KEY:
             error_msg = "GEMINI_API_KEY is not configured. Please set it in your environment variables."
@@ -700,31 +1025,44 @@ async def chat(request: ChatRequest):
                 media_type="text/plain"
             )
         
+        # Clean up old sessions periodically
+        cleanup_old_sessions()
+        
+        # Get or create chat session
+        session_id = request.session_id or "default"
+        
+        # Check if this is a new session (before locking)
+        with session_lock:
+            is_new_session = session_id not in chat_sessions
+            if is_new_session:
+                # Check for "Hello there" greeting for new sessions
+                message_lower = request.message.strip().lower()
+                is_hello_there = "hello there" in message_lower
+                include_greeting_rule = is_hello_there
+                
+                # Build system prompt
+                system_prompt = build_system_prompt(include_hello_greeting=include_greeting_rule)
+                
+                # Create model with system instruction
+                model = genai.GenerativeModel(
+                    'gemini-2.5-flash',
+                    system_instruction=system_prompt
+                )
+                chat_sessions[session_id] = model.start_chat()
+                session_timestamps[session_id] = datetime.now()
+                logger.info(f"Created new chat session: {session_id} with system instruction")
+            else:
+                # Update session timestamp
+                session_timestamps[session_id] = datetime.now()
+                logger.info(f"Using existing chat session: {session_id}")
+        
         # Create a simple hash of the message for first-message tracking
         message_hash = hashlib.md5(request.message.strip().lower().encode()).hexdigest()
-        
-        # Check for "Hello there" greeting and track if it's been used
-        message_lower = request.message.strip().lower()
-        is_hello_there = "hello there" in message_lower
         
         # Track if this is the first message in a conversation
         is_first_message = message_hash not in first_messages
         if is_first_message:
             first_messages.add(message_hash)
-        
-        # Only include the greeting rule if:
-        # 1. User says "Hello there" AND
-        # 2. This is the first message in the conversation (new conversation)
-        # 3. The greeting hasn't been used in this conversation yet
-        include_greeting_rule = False
-        if is_hello_there and is_first_message and message_hash not in hello_there_sessions:
-            # First "Hello there" in a new conversation - include the greeting rule
-            hello_there_sessions.add(message_hash)
-            include_greeting_rule = True
-        elif is_hello_there and message_hash in hello_there_sessions:
-            # "Hello there" already used in this conversation - don't include the rule
-            include_greeting_rule = False
-        # For all other cases (not "Hello there" or not first message), don't include the rule
         
         # Check for alerts
         alert_msg = should_alert(request.message, message_hash=message_hash)
@@ -732,43 +1070,116 @@ async def chat(request: ChatRequest):
             push_notification(alert_msg)
             logger.info(f"Pushover alert sent: {alert_msg[:100]}")
         
-        logger.info(f"Received chat request: {request.message[:50]}...")
+        logger.info(f"Received chat request (session: {session_id}): {request.message[:50]}...")
         
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        # Store is_new_session in a way that's accessible in the closure
+        session_is_new = is_new_session
         
         def generate_response():
             try:
-                # Search knowledge base for relevant information
-                # Check if user wants random selection
+                # Get the chat session
+                with session_lock:
+                    chat_session = chat_sessions.get(session_id)
+                    session_exists = chat_session is not None
+                    if not chat_session:
+                        # Session was cleaned up, create a new one
+                        system_prompt = build_system_prompt(include_hello_greeting=False)
+                        model = genai.GenerativeModel(
+                            'gemini-2.5-flash',
+                            system_instruction=system_prompt
+                        )
+                        chat_session = model.start_chat()
+                        chat_sessions[session_id] = chat_session
+                        session_timestamps[session_id] = datetime.now()
+                        logger.info(f"Recreated chat session: {session_id}")
+                        session_exists = False
+                
+                # Check if session has history to determine if this is a follow-up
+                # ChatSession.history contains both user messages and model responses
+                # After first exchange, history will have 2 items (user + assistant)
+                has_history = False
+                history_count = 0
+                
+                if hasattr(chat_session, 'history'):
+                    try:
+                        # Gemini ChatSession.history is a list of Content objects
+                        history_count = len(chat_session.history)
+                        # Each exchange adds 2 items: user message + assistant response
+                        has_history = history_count >= 2
+                        
+                        # Verify history actually contains meaningful content
+                        if has_history:
+                            # Check if we can access history content
+                            try:
+                                # Try to access first history item to verify it's not empty
+                                if history_count > 0 and chat_session.history[0]:
+                                    logger.info(f"Session {session_id} has {history_count} history items (verified)")
+                            except (AttributeError, IndexError, TypeError) as e:
+                                logger.warning(f"History exists but may be empty: {e}")
+                                has_history = False
+                    except Exception as e:
+                        logger.warning(f"Error checking history: {e}")
+                        has_history = False
+                else:
+                    logger.warning(f"Session {session_id} has no history attribute")
+                
+                # Only search KB for:
+                # 1. New sessions with no history (first message ever)
+                # 2. Explicit random selection requests
+                # NEVER search KB for follow-up questions - rely on conversation history
                 wants_random = detect_random_selection_request(request.message)
+                should_search_kb = (not has_history) or wants_random
+                
+                # Debug logging
+                logger.info(f"Session {session_id}: has_history={has_history}, history_count={history_count}, should_search_kb={should_search_kb}, wants_random={wants_random}, is_new_session={session_is_new}")
+                
                 kb_context = ""
-                kb_results = search_knowledge_base(request.message, max_results=2, random_selection=wants_random)
-                referenced_images = []  # Track images from referenced PDFs
+                referenced_images = []
                 
-                if kb_results:
-                    if wants_random:
-                        kb_context = "\n\nRandomly selected project from my portfolio:\n\n"
-                    else:
-                        kb_context = "\n\nRelevant information from my project documents:\n\n"
-                    for filename, content, score in kb_results:
-                        kb_context += f"--- From {filename} (relevance: {score:.1f}) ---\n{content}\n\n"
-                        # Check if this PDF has images
-                        if filename in kb_images and kb_images[filename]:
-                            referenced_images.extend(kb_images[filename])
-                    logger.info(f"Found {len(kb_results)} relevant documents in KB (random_selection={wants_random})")
-                    if referenced_images:
-                        logger.info(f"Found {len(referenced_images)} images from referenced PDFs")
+                if should_search_kb:
+                    # Search knowledge base for relevant information
+                    wants_random = detect_random_selection_request(request.message)
+                    logger.info(f"Searching KB - wants_random: {wants_random}, query: {request.message[:100]}")
+                    kb_results = search_knowledge_base(request.message, max_results=2, random_selection=wants_random)
+                    
+                    if kb_results:
+                        # Log what was found
+                        for fname, _, score in kb_results:
+                            logger.info(f"KB search result: {fname} (score: {score:.1f})")
+                        
+                        if wants_random:
+                            kb_context = "\n\nRandomly selected project from my portfolio:\n\n"
+                        else:
+                            # Check if a specific project is mentioned
+                            query_lower_check = request.message.lower()
+                            if 'gaia' in query_lower_check:
+                                kb_context = "\n\nInformation about the GAIA Agent project that was requested:\n\n"
+                            elif 'photo' in query_lower_check and ('manager' in query_lower_check or 'gallery' in query_lower_check):
+                                kb_context = "\n\nInformation about the AI Photo Manager project that was requested:\n\n"
+                            else:
+                                kb_context = "\n\nRelevant information from my project documents (for the specific project requested):\n\n"
+                        for filename, content, score in kb_results:
+                            kb_context += f"--- From {filename} (relevance: {score:.1f}) ---\n{content}\n\n"
+                            # Check if this PDF has images
+                            if filename in kb_images and kb_images[filename]:
+                                referenced_images.extend(kb_images[filename])
+                        logger.info(f"Found {len(kb_results)} relevant documents in KB (random_selection={wants_random})")
+                        if referenced_images:
+                            logger.info(f"Found {len(referenced_images)} images from referenced PDFs")
                 
-                # Build the prompt with KB context and persona data
-                # Only include greeting rule if it hasn't been used in this conversation
-                full_prompt = build_system_prompt(include_hello_greeting=include_greeting_rule)
+                # Build the message - include KB context only if available
+                # For follow-up questions, the conversation history will provide context
+                user_message = request.message
                 if kb_context:
-                    full_prompt += kb_context
-                full_prompt += f"\n\nUser: {request.message}\n\nAssistant:"
+                    user_message = f"{kb_context}\n\nUser question: {request.message}"
                 
-                logger.info("Sending request to Gemini API...")
-                response = model.generate_content(
-                    full_prompt,
+                # Log conversation history length for debugging
+                history_len = len(chat_session.history) if hasattr(chat_session, 'history') else 0
+                logger.info(f"Sending message to Gemini API (session: {session_id}, is_new: {session_is_new}, history_length: {history_len}, kb_search: {should_search_kb})...")
+                
+                # Send message to chat session (automatically includes conversation history)
+                response = chat_session.send_message(
+                    user_message,
                     stream=True
                 )
                 
