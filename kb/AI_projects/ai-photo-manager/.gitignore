@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.index_history.json
+gallery.db
+streamlit.log
+streamlit.err
+*.sqlite
+*.db
+.DS_Store

@@ -60,3 +60,7 @@ Thumbs.db
 # Build outputs
 build/
 *.egg-info/
+
+# Backup folders
+BACKUP*/
+backup*/
