@@ -1,201 +1,179 @@
-# Virtual Persona CV - Online Resume & AI Chatbot
+# Virtual Persona CV
 
-A modern, interactive portfolio website that combines a traditional CV/resume with an AI-powered chatbot. This application serves as your **online professional presence** where visitors can view your experience, projects, and skills, then have a conversation with an AI version of you that knows about your work, education, and projects.
+An AI-powered professional portfolio that combines a traditional resume with a retrieval-augmented chatbot capable of answering detailed questions about experience, projects, and technical background in real-time.
 
-> **Note:** This project was built with the help of AI tools (primarily Gemini, ChatGPT, and Cursor AI). This README is written as a beginner's guide, partly for others learning, but mostly so I remember what I did when I come back to this after a long time! 😄
+## Why I Built This
 
-## 🎯 What This App Is
+I wanted to explore how large language models can be combined with structured personal data to create more natural and informative professional interfaces. This project demonstrates my ability to design, build, and deploy AI systems that go beyond static content and provide contextual, explainable answers using retrieval-augmented generation (RAG).
 
-This is a **two-in-one application**:
+As someone working in AI Operations and RLHF, I'm particularly interested in how AI systems can be made more transparent and grounded in actual data rather than generating responses from training data alone.
 
-1. **📄 Online CV/Resume** - A beautiful, responsive portfolio website showcasing:
-   - Professional experience
-   - Education background
-   - Technical projects
-   - Skills and expertise
-   - Contact information
+## Who This Is For
 
-2. **🤖 Virtual Me Chatbot** - An AI assistant that can:
-   - Answer questions about your experience and background
-   - Discuss your projects in detail
-   - Provide insights about your work
-   - Share information from your knowledge base
-   - Show images and documentation from your projects
+- **Recruiters and hiring managers** exploring my background and capabilities
+- **Technical peers** interested in RAG-style systems and LLM integration
+- **Anyone curious** about how LLMs can be used for interactive professional profiles
 
-## ✨ Key Features
+## Overview
 
-- **Interactive Portfolio**: Modern, responsive design with smooth animations
-- **AI Chatbot**: Powered by Google Gemini, trained on your actual project files and resume
-- **Knowledge Base Integration**: The chatbot has access to:
-  - Data Science projects (PDFs, markdown files)
-  - Machine Learning assignments and projects
-  - Extracted images from project documentation
-  - Personal summary and LinkedIn profile
-- **Real-time Chat**: Streaming responses for natural conversation
-- **Project Showcase**: Browse projects with downloadable PDFs
-- **Smart Search**: The chatbot searches through my knowledge base to provide accurate, detailed answers
+This is a two-part application:
 
-## 🏗️ How It Works
+1. **Interactive Portfolio Website** - A responsive CV/resume showcasing professional experience, education, projects, and skills
+2. **AI Chatbot** - A retrieval-augmented conversational interface that dynamically references my project documents, academic work, and professional background to answer questions in detail
+
+## Key Features
+
+- **Retrieval-Augmented Generation (RAG)**: The chatbot uses retrieval-augmented generation over my documents, dynamically referencing project files, assignments, and professional data at inference time
+- **Knowledge Base Integration**: Semantic search across 150+ documents including:
+  - Data Science projects (analysis reports, notebooks)
+  - Machine Learning assignments (HW1-HW6 with full documentation)
+  - AI projects (GAIA Agent, Photo Manager with source code)
+  - Academic work with extracted images and visualizations
+- **Real-time Streaming**: FastAPI backend with streaming responses for natural conversation flow
+- **Session Management**: Thread-safe chat session handling with automatic cleanup
+- **Precise Project Matching**: Advanced search with negative keyword detection to ensure accurate project retrieval
+
+## Architecture
 
 ### Frontend (React + TypeScript)
-- Built with **React 19** and **Vite** for fast development
-- Modern UI with Tailwind CSS styling
-- Chat interface with markdown rendering
-- Responsive design for mobile and desktop
+- **React 19** - Modern UI framework with server components support
+- **TypeScript** - Strong typing for maintainability and reliability
+- **Vite** - Fast build tool and development server
+- **React Markdown** - Secure markdown rendering for project documentation
+- **Tailwind CSS** - Utility-first styling for responsive design
 
 ### Backend (FastAPI + Python)
-- **FastAPI** REST API serving chat requests
-- **Google Gemini AI** for generating responses
-- Knowledge base system that loads and indexes:
-  - PDF documents (project reports, assignments)
-  - Markdown files (project documentation)
-  - Extracted images from PDFs
-- Streaming responses for real-time chat experience
+- **FastAPI** - Lightweight, async backend for low-latency AI requests
+- **Google Gemini 2.5 Flash** - LLM used for controlled, document-grounded responses
+- **PyPDF2** - PDF parsing to enable reasoning over real academic and project artifacts
+- **Pillow** - Image extraction and processing from project documents
+- **Semantic Search** - Custom relevance scoring with phrase matching, metadata extraction, and negative keyword detection
 
-### The Magic
-When you ask the chatbot a question:
-1. Your question is sent to the FastAPI backend
-2. The backend searches through your knowledge base for relevant information
-3. It builds a context with relevant project files and personal data
-4. Google Gemini generates a response based on that context
-5. The response streams back to you in real-time
+### How It Works
 
-## 🚀 Quick Start
+1. User query arrives at FastAPI backend
+2. Backend performs semantic search across knowledge base (PDFs, markdown files)
+3. Relevant document chunks are retrieved and ranked by relevance
+4. Context is built with retrieved documents and conversation history
+5. Google Gemini generates a grounded response using the context
+6. Response streams back to frontend in real-time
+
+The system only searches the knowledge base on initial queries or explicit requests—follow-up questions leverage conversation history for context continuity.
+
+## Tech Stack
+
+### Core Technologies
+- **Python 3.11+** - Backend runtime
+- **Node.js** - Frontend toolchain
+- **FastAPI** - Async Python web framework
+- **React 19** - UI library
+- **TypeScript** - Type-safe JavaScript
+
+### AI & ML
+- **Google Gemini API** - Large language model for text generation
+- **Retrieval-Augmented Generation** - Document grounding approach
+- **Semantic Search** - Custom relevance scoring algorithm
+
+### Infrastructure
+- **Google Cloud Run** - Backend deployment (containerized)
+- **Railway** - Frontend deployment
+- **Docker** - Containerization
+
+### Document Processing
+- **PyPDF2** - PDF text and image extraction
+- **Pillow (PIL)** - Image processing
+- **Markdown** - Project documentation format
+
+## Quick Start
 
 ### Prerequisites
-- **Node.js** (for frontend)
-- **Python 3.11+** (for backend)
-- **Google Gemini API Key** (get one at [Google AI Studio](https://makersuite.google.com/app/apikey))
+- Node.js (for frontend)
+- Python 3.11+ (for backend)
+- Google Gemini API Key ([Get one here](https://makersuite.google.com/app/apikey))
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/ppaltsokas/virtual-me-chatbot-v2.git
-   cd virtual-me-chatbot-v2
-   ```
+```bash
+# Clone repository
+git clone https://github.com/ppaltsokas/virtual-me-chatbot-v2.git
+cd virtual-me-chatbot-v2
 
-2. **Install dependencies**
-   ```bash
-   # Frontend
-   npm install
-   
-   # Backend
-   pip install -r requirements.txt
-   ```
+# Install frontend dependencies
+npm install
 
-3. **Set up environment variables**
-   - Create a `.env.local` file in the root directory
-   - Add your Gemini API key:
-     ```
-     GEMINI_API_KEY=your_api_key_here
-     ```
+# Install backend dependencies
+pip install -r requirements.txt.backend
+```
 
-4. **Start the application**
-   ```powershell
-   # Windows (PowerShell)
-   .\start-all.ps1
-   
-   # Or manually:
-   # Terminal 1 - Backend
-   .\start-backend.ps1
-   
-   # Terminal 2 - Frontend
-   .\start-frontend.ps1
-   ```
+### Configuration
 
-5. **Open your browser**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
+Create a `.env.local` file:
 
-## 📁 Project Structure (What's What)
+```env
+GEMINI_API_KEY=your_api_key_here
+VITE_API_URL=http://localhost:8000
+```
 
-Here's what each folder/file does (for beginners and future me):
+### Running Locally
+
+```bash
+# Terminal 1 - Start backend
+python main.py.backend
+
+# Terminal 2 - Start frontend
+npm run dev
+```
+
+Access at `http://localhost:5173` (or port shown in terminal).
+
+## Project Structure
 
 ```
 virtual-me-chatbot-v2/
 ├── components/          # React UI components
-│   └── ChatInterface.tsx  # The chat window you see on screen
-├── services/            # Frontend API communication
-│   └── geminiService.ts    # Handles talking to the backend
-├── kb/                  # Knowledge base - all the project files
-│   ├── Data_Science_projects/  # PDFs and docs for data science projects
-│   ├── ML_projects/            # PDFs for machine learning projects
-│   └── images/                 # Images extracted from PDFs
-├── me/                  # Personal info the AI uses
-│   ├── CV PALTSOKAS PANAGIOTIS.pdf  # My actual CV
-│   ├── linkedin.pdf              # LinkedIn profile export
-│   └── summary.txt               # Personal summary text
-├── main.py.backend      # Python backend server (FastAPI)
-├── requirements.txt.backend  # Python packages needed
-├── package.json         # Node.js packages needed
-├── App.tsx              # Main React component (the whole page)
-├── constants.ts         # All the resume data (experience, skills, etc.)
-└── public/              # Static files (images, sounds)
+│   └── ChatInterface.tsx
+├── services/           # Frontend API services
+│   └── geminiService.ts
+├── kb/                 # Knowledge base
+│   ├── Data_Science_projects/
+│   ├── ML_projects/    # HW1-HW6 organized by assignment
+│   ├── AI_projects/    # GAIA Agent, Photo Manager
+│   └── images/         # Extracted PDF images
+├── me/                 # Personal profile data
+│   ├── CV PALTSOKAS PANAGIOTIS.pdf
+│   ├── linkedin.pdf
+│   └── summary.txt
+├── main.py.backend     # FastAPI backend server
+└── constants.ts        # Resume data and configuration
 ```
 
-## 🛠️ Tech Stack
+## Security & Privacy
 
-### Frontend
-- **React 19** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **React Markdown** - Markdown rendering
-- **Lucide React** - Icons
+- **No personal data is intentionally stored** by the application
+- **Sensitive files are excluded** from version control via `.gitignore`
+- **API keys are handled** via environment variables only
+- **Environment files** (`.env*`) are excluded from the repository
+- Infrastructure-level logs may exist at deployment platform
 
-### Backend
-- **FastAPI** - Web framework
-- **Uvicorn** - ASGI server
-- **Google Gemini AI** - Language model
-- **PyPDF2** - PDF processing
-- **Pillow** - Image processing
+## Documentation
 
-## 📝 What This Does
+- **PROJECT_OVERVIEW.md** - Technical architecture and design decisions
+- **SECURITY.md** - Security best practices and key management
+- **DEV_NOTES.md** - Development notes, learning resources, and implementation details
 
-Instead of a boring static resume, this creates an interactive experience where visitors can:
+## Live Demo
 
-- **Browse** your experience and projects (like a normal portfolio)
-- **Chat** with an AI version of you that knows your work
-- **Ask questions** and get detailed answers based on your actual project files
-- **View** images and documentation from your projects
-- **Download** your CV directly
+**Demo Deployment**: https://virtual-me-chatbot-v2-production.up.railway.app  
+*(Note: Demo deployment may be inactive depending on hosting availability)*
 
-The chatbot reads your actual project PDFs, markdown files, and personal info, so it can give real answers about your work, not generic responses.
+## Author
 
-> **Fun fact:** The AI was trained on my actual assignments, project reports, and personal summary. It's like having a digital version of me that remembers everything I've worked on!
-
-## 🔒 Security & Privacy
-
-- Environment variables (API keys) are excluded from version control
-- Sensitive files are in `.gitignore`
-- No personal data is stored or logged
-- All API keys remain local to your environment
-
-## 📚 Documentation
-
-- **PROJECT_OVERVIEW.md** - Technical architecture overview
-- **SECURITY.md** - How to keep your API keys safe
-
-> **For future me:** If you're reading this months later and forgot how everything works, start with PROJECT_OVERVIEW.md. It explains the architecture without all the deployment details.
-
-## 🤝 Contributing
-
-This is a personal portfolio project, but suggestions and feedback are welcome!
-
-## 📄 License
-
-This project is for personal use.
-
-## 👤 Author
-
-**Panagiotis Paltsokas**
-- Data Scientist / AI Trust & Safety Professional
-- Working at TaskUs (AI Operations | RLHF & Model Optimization)
-- MSc in Data Science & Machine Learning
-- Based in Thessaloniki, Greece
+**Panagiotis Paltsokas**  
+Data Scientist / AI Trust & Safety Professional  
+Working at TaskUs (AI Operations | RLHF & Model Optimization)  
+MSc in Data Science & Machine Learning | BSc in Mathematics  
+Based in Thessaloniki, Greece
 
 ---
-
-**Live Demo**: https://virtual-me-chatbot-v2-production.up.railway.app
 
 **Repository**: https://github.com/ppaltsokas/virtual-me-chatbot-v2
