@@ -2,6 +2,8 @@
 
 An AI-powered professional portfolio that combines a traditional resume with a retrieval-augmented chatbot capable of answering detailed questions about experience, projects, and technical background in real-time.
 
+🌐 **Live at**: https://www.ppaltsokas.com
+
 ## Why I Built This
 
 I wanted to explore how large language models can be combined with structured personal data to create more natural and informative professional interfaces. This project demonstrates my ability to design, build, and deploy AI systems that go beyond static content and provide contextual, explainable answers using retrieval-augmented generation (RAG).
@@ -161,10 +163,12 @@ virtual-me-chatbot-v2/
 - **SECURITY.md** - Security best practices and key management
 - **DEV_NOTES.md** - Development notes, learning resources, and implementation details
 
-## Live Demo
+## Live Portfolio
 
-**Live Portfolio**: https://www.ppaltsokas.com  
-**Railway Deployment**: https://virtual-me-chatbot-v2-production.up.railway.app
+🌐 **Live Site**: https://www.ppaltsokas.com  
+🚂 **Railway Deployment**: https://virtual-me-chatbot-v2-production.up.railway.app
+
+The portfolio is live and fully functional with custom domain, SSL certificate, and all features enabled including the AI chatbot.
 
 ## Author
 
