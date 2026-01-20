@@ -1,8 +1,8 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import google.generativeai as genai
 import json
 from pathlib import Path
@@ -19,6 +19,9 @@ from PIL import Image
 import io
 import base64
 import threading
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Configure logging first
 logging.basicConfig(
@@ -45,11 +48,13 @@ app = FastAPI(
 
 # CORS configuration - reads allowed origins from environment variable
 # Set ALLOWED_ORIGINS env var with comma-separated URLs for production
+# Default includes localhost for development and ppaltsokas.com for production
 allowed_origins_str = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173"
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,https://www.ppaltsokas.com,https://ppaltsokas.com,https://virtual-me-chatbot-v2-production.up.railway.app"
 )
 allowed_origins = [origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()]
+logger.info(f"Allowed CORS origins: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -110,6 +115,55 @@ chat_sessions: Dict[str, genai.ChatSession] = {}
 session_timestamps: Dict[str, datetime] = {}
 # Lock for thread-safe session access
 session_lock = threading.Lock()
+
+# Rate limiting and spam prevention
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# IP blocking for spam prevention
+blocked_ips: Dict[str, datetime] = {}  # IP -> block_until timestamp
+failed_requests: Dict[str, int] = {}  # IP -> failed request count
+MAX_FAILED_REQUESTS = 10
+BLOCK_DURATION = timedelta(hours=1)
+MAX_MESSAGE_LENGTH = 2000  # characters
+MAX_SESSIONS_PER_IP = 5
+
+def get_client_ip(request: Request) -> str:
+    """Get client IP address from request."""
+    # Check X-Forwarded-For header (from Railway/Cloud Run proxy)
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # X-Forwarded-For can contain multiple IPs, take the first one
+        ip = forwarded_for.split(",")[0].strip()
+        return ip
+    # Fallback to direct client IP
+    client_host = request.client.host if request.client else "unknown"
+    return client_host
+
+def is_ip_blocked(ip: str) -> bool:
+    """Check if IP is currently blocked."""
+    if ip in blocked_ips:
+        if datetime.now() < blocked_ips[ip]:
+            return True
+        else:
+            # Block expired, remove it
+            blocked_ips.pop(ip, None)
+            failed_requests.pop(ip, None)
+    return False
+
+def block_ip(ip: str) -> None:
+    """Block an IP address for BLOCK_DURATION."""
+    blocked_ips[ip] = datetime.now() + BLOCK_DURATION
+    failed_requests[ip] = 0  # Reset counter after blocking
+    logger.warning(f"Blocked IP {ip} until {blocked_ips[ip]}")
+
+def record_failed_request(ip: str) -> None:
+    """Record a failed request and block IP if threshold exceeded."""
+    failed_requests[ip] = failed_requests.get(ip, 0) + 1
+    if failed_requests[ip] >= MAX_FAILED_REQUESTS:
+        block_ip(ip)
+        logger.warning(f"IP {ip} exceeded {MAX_FAILED_REQUESTS} failed requests, blocking for {BLOCK_DURATION}")
 
 def should_alert(message: str, message_hash: Optional[str] = None) -> Optional[str]:
     """
@@ -1010,13 +1064,31 @@ except Exception as e:
     logger.error(f"Error loading persona data: {e}", exc_info=True)
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=MAX_MESSAGE_LENGTH)
     session_id: Optional[str] = "default"
 
 @app.post("/chat")
-async def chat(request: ChatRequest):
+@limiter.limit("20/minute")  # Rate limit: 20 requests per minute per IP
+async def chat(http_request: Request, request: ChatRequest):
     """Chat endpoint with knowledge base integration and conversation memory."""
     try:
+        # Get client IP and check if blocked
+        client_ip = get_client_ip(http_request)
+        if is_ip_blocked(client_ip):
+            logger.warning(f"Blocked request from {client_ip}")
+            raise HTTPException(
+                status_code=429,
+                detail="Too many requests. Please try again later."
+            )
+        
+        # Validate message length
+        if len(request.message) > MAX_MESSAGE_LENGTH:
+            record_failed_request(client_ip)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Message too long. Maximum length is {MAX_MESSAGE_LENGTH} characters."
+            )
+        
         if not GEMINI_API_KEY:
             error_msg = "GEMINI_API_KEY is not configured. Please set it in your environment variables."
             logger.error(error_msg)
@@ -1196,7 +1268,13 @@ async def chat(request: ChatRequest):
             generate_response(),
             media_type="text/plain"
         )
+    except HTTPException:
+        # Re-raise HTTP exceptions (like rate limiting, validation errors)
+        raise
     except Exception as e:
+        # Record failed request for spam detection
+        client_ip = get_client_ip(http_request)
+        record_failed_request(client_ip)
         error_msg = f"Unexpected error in chat endpoint: {str(e)}"
         logger.error(error_msg, exc_info=True)
         return StreamingResponse(
