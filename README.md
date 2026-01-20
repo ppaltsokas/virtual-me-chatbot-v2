@@ -163,8 +163,8 @@ virtual-me-chatbot-v2/
 
 ## Live Demo
 
-**Demo Deployment**: https://virtual-me-chatbot-v2-production.up.railway.app  
-*(Note: Demo deployment may be inactive depending on hosting availability)*
+**Live Portfolio**: https://www.ppaltsokas.com  
+**Railway Deployment**: https://virtual-me-chatbot-v2-production.up.railway.app
 
 ## Author
 
