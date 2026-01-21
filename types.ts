@@ -28,6 +28,14 @@ export interface Education {
   grade?: string;
 }
 
+export interface Certification {
+  id: string;
+  title: string;
+  issuer: string;
+  year: string;
+  icon?: string; // Icon URL or image path for the certification logo
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -59,6 +67,8 @@ export interface ResumeData {
   personalInfo: PersonalInfo;
   experience: Experience[];
   education: Education[];
+  certifications?: Certification[];
+  latestProjects?: Project[];
   projects: Project[];
   skills: SkillCategory[];
 }

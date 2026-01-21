@@ -11,7 +11,8 @@ import {
   Cpu, 
   MessageSquare,
   Download,
-  GraduationCap
+  GraduationCap,
+  Award
 } from 'lucide-react';
 import { RESUME_DATA, API_URL } from './constants';
 import ChatInterface from './components/ChatInterface';
@@ -19,7 +20,7 @@ import ChatInterface from './components/ChatInterface';
 const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { personalInfo, experience, education, projects, skills } = RESUME_DATA;
+  const { personalInfo, experience, education, certifications, latestProjects, projects, skills } = RESUME_DATA;
 
   // Responsive layout detection
   useEffect(() => {
@@ -129,7 +130,7 @@ const App: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-indigo-400 font-medium">{job.company}</div>
-                      <p className="text-slate-400 leading-relaxed">{job.description}</p>
+                      <p className="text-slate-400 leading-relaxed whitespace-pre-line">{job.description}</p>
                       <div className="flex flex-wrap gap-2 pt-2">
                         {job.technologies.map((tech) => (
                           <span key={tech} className="px-2 py-1 text-xs rounded bg-slate-800 text-slate-300 border border-slate-700">
@@ -169,28 +170,151 @@ const App: React.FC = () => {
               </div>
             </section>
 
+            {/* Certifications Section */}
+            {certifications && certifications.length > 0 && (
+              <section className="animate-fade-in-up" style={{ animationDelay: '250ms' }}>
+                <h2 className="flex items-center gap-3 text-2xl font-bold text-slate-100 mb-8">
+                  <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-400">
+                    <Award size={24} />
+                  </div>
+                  Certifications
+                </h2>
+                <div className="grid gap-4">
+                  {certifications.map((cert) => (
+                    <div key={cert.id} className="p-5 rounded-2xl bg-slate-900/30 border border-slate-800 flex items-start gap-4 hover:border-yellow-500/50 transition-colors">
+                      {cert.icon && (
+                        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-white rounded-lg p-2 border border-slate-700">
+                          {cert.icon.startsWith('/') || cert.icon.startsWith('http') ? (
+                            <img 
+                              src={cert.icon} 
+                              alt={`${cert.issuer} logo`}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                // Replace with fallback icon if image fails
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                if (!target.parentElement?.querySelector('.icon-fallback')) {
+                                  const fallback = document.createElement('div');
+                                  fallback.className = 'icon-fallback text-xl';
+                                  fallback.textContent = '🏆';
+                                  target.parentElement?.appendChild(fallback);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="text-2xl">{cert.icon}</div>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-slate-200 mb-1">{cert.title}</h3>
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                          <span className="text-slate-400">{cert.issuer}</span>
+                          <span className="text-slate-600">•</span>
+                          <span className="text-slate-500 font-mono">{cert.year}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Latest Projects Section */}
+            {latestProjects && latestProjects.length > 0 && (
+              <section className="animate-fade-in-up" style={{ animationDelay: '280ms' }}>
+                <h2 className="flex items-center gap-3 text-2xl font-bold text-slate-100 mb-8">
+                  <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+                    <Code size={24} />
+                  </div>
+                  Latest Projects
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {latestProjects.map((project) => {
+                    const ProjectContent = (
+                      <>
+                        <div className="flex justify-between items-start mb-4">
+                          <h3 className="text-lg font-bold text-slate-200 group-hover:text-purple-400 transition-colors">
+                            {project.title}
+                          </h3>
+                          {project.link && (
+                            <ExternalLink size={18} className="text-slate-600 group-hover:text-purple-400 transition-colors" />
+                          )}
+                        </div>
+                        <p className="text-slate-400 text-sm mb-4 min-h-[3rem]">
+                          {project.description}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {project.technologies.map((tech) => (
+                            <span key={tech} className="px-2 py-1 text-xs rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    );
+
+                    if (project.link) {
+                      return (
+                        <a
+                          key={project.id}
+                          href={project.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-purple-500/50 transition-colors hover:bg-slate-800/50 cursor-pointer block"
+                        >
+                          {ProjectContent}
+                        </a>
+                      );
+                    }
+
+                    return (
+                      <div key={project.id} className="group p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-purple-500/50 transition-colors hover:bg-slate-800/50">
+                        {ProjectContent}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* Projects Section */}
             <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
               <h2 className="flex items-center gap-3 text-2xl font-bold text-slate-100 mb-8">
                 <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
                   <Code size={24} />
                 </div>
-                Featured Projects
+                Projects Showcase and Download
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {projects.map((project) => {
                   const hasPdf = project.pdfPath !== undefined;
+                  const hasLink = project.link !== undefined;
                   const pdfUrl = hasPdf ? `${API_URL}/kb/pdf/${encodeURIComponent(project.pdfPath)}` : null;
                   
                   const ProjectContent = (
                     <>
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">
+                      <div className="flex justify-between items-start mb-4 gap-2">
+                        <h3 className="text-lg font-bold text-slate-200 group-hover:text-emerald-400 transition-colors flex-1">
                           {project.title}
                         </h3>
-                        {hasPdf && (
-                          <ExternalLink size={18} className="text-slate-600 group-hover:text-emerald-400 transition-colors" />
-                        )}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {hasLink && (
+                            <a
+                              href={project.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-slate-600 hover:text-emerald-400 transition-colors"
+                              title="View on GitHub"
+                            >
+                              <Github size={18} />
+                            </a>
+                          )}
+                          {hasPdf && (
+                            <ExternalLink size={18} className="text-slate-600 group-hover:text-emerald-400 transition-colors" />
+                          )}
+                        </div>
                       </div>
                       <p className="text-slate-400 text-sm mb-4 min-h-[3rem]">
                         {project.description}
@@ -205,6 +329,7 @@ const App: React.FC = () => {
                     </>
                   );
                   
+                  // Projects with PDFs are downloadable
                   if (hasPdf && pdfUrl) {
                     return (
                       <a
@@ -218,6 +343,22 @@ const App: React.FC = () => {
                     );
                   }
                   
+                  // Projects with GitHub links are clickable
+                  if (hasLink && project.link) {
+                    return (
+                      <a
+                        key={project.id}
+                        href={project.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-emerald-500/50 transition-colors hover:bg-slate-800/50 cursor-pointer block"
+                      >
+                        {ProjectContent}
+                      </a>
+                    );
+                  }
+                  
+                  // Projects without PDF or link (school assignments)
                   return (
                     <div key={project.id} className="group p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-emerald-500/50 transition-colors hover:bg-slate-800/50">
                       {ProjectContent}

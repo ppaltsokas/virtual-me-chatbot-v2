@@ -6,8 +6,8 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export const RESUME_DATA: ResumeData = {
   personalInfo: {
     name: "Panagiotis Paltsokas",
-    title: "Data Scientist / AI Trust & Safety",
-    bio: "I am a Data Scientist with a strong foundation in AI/ML, currently working in Trust & Safety/RLHF to fine-tune flagship conversational AI assistants. A mathematician turned AI practitioner, I combine deep mathematical understanding with solid ML fundamentals. I pivot quickly, contribute to calibrations for international teams, and thrive on building reliable, insight-driven workflows.",
+    title: "Data Scientist | AI Operations & Human Data",
+    bio: "Data Scientist who actively practices data science, analytics, and AI engineering through hands-on work, self-initiated projects, and continuous online training. I independently build dashboards, develop AI tools and automations, and analyze complex datasets to sharpen my technical skills. I am seeking a role that enables daily application and sustained upskilling in data, machine learning, and AI-driven problem solving.",
     email: "ppaltsokas@gmail.com",
     location: "Thessaloniki, GR",
     socials: {
@@ -21,8 +21,23 @@ export const RESUME_DATA: ResumeData = {
       role: "AI Operations | RLHF & Model Optimization",
       company: "TaskUs",
       period: "Jun 2024 - Ongoing",
-      description: "Translating fast-changing client policies into production-ready labeling and fine-tuning conversational AI. I participate in calibrations, resolve edge cases, and provide structured feedback on model outputs to improve accuracy and safety. I support team analytics and identify trends in model–policy misalignment to guide targeted improvements. I have completed internal academies in Team Leadership and Data Science and have played a key role in winning new client work through rapid pilots under short notice.",
-      technologies: ["RLHF", "Python", "Data Analysis", "SOP Development", "Quality Assurance"]
+      description: `• Translate fast-changing client policies into production-grade labeling rules, examples, and SOPs for large-scale RLHF pipelines.
+
+• De-facto Subject Matter Expert. Resolve complex edge cases and drive cross-geo alignment through weekly calibrations.
+
+• Deliver high-impact pilots under extreme time pressure, including:
+  - GAIA-style adversarial prompt datasets (Gemini, multimodal & reasoning stress-tests)
+  - Mathematics-based reasoning pilot completed solo in one day (secured new client)
+  - 3D asset & metadata pilot (Blender workflows, textures, hierarchies) by reverse-engineering client intent
+
+• Build and maintain a live Google Sheets analytics platform tracking label drift, policy hot-spots, chat engagement, and misalignment signals. Used directly in calibrations and QA reviews.
+
+• Design synthetic Human Data datasets modeling disagreement patterns, severity drift, and throughput vs accuracy trade-offs. Perform statistical analysis for leadership insights.
+
+• Provide structured model feedback to improve safety coverage, policy precision, and FP/FN balance. Maintain consistently top-tier QA performance.
+
+• Selected for all high-stakes pilots due to rapid comprehension, technical depth, and operational reliability.`,
+      technologies: ["RLHF", "Trust & Safety", "Python", "Data Analysis", "SOP Development", "Quality Assurance", "Google Sheets", "Statistical Analysis", "Analytics", "Blender", "Gemini API", "Prompt Engineering", "Model Evaluation"]
     },
     {
       id: "exp-2",
@@ -56,6 +71,71 @@ export const RESUME_DATA: ResumeData = {
       year: "2014"
     }
   ],
+  certifications: [
+    {
+      id: "cert-1",
+      title: "Hugging Face AI Agents Course",
+      issuer: "Hugging Face",
+      year: "2025",
+      icon: "/huggingface-icon.png"
+    },
+    {
+      id: "cert-2",
+      title: "Large Language Models: Application Through Production",
+      issuer: "edX & Databricks",
+      year: "2024",
+      icon: "/openai logo.png"
+    },
+    {
+      id: "cert-3",
+      title: "100 Days of Code: The Complete Python Pro Bootcamp",
+      issuer: "Udemy",
+      year: "2024",
+      icon: "/python_logo.png"
+    },
+    {
+      id: "cert-4",
+      title: "R Programming A-Z: R for Data Science",
+      issuer: "Udemy",
+      year: "2023",
+      icon: "/Rlogo.png"
+    },
+    {
+      id: "cert-5",
+      title: "15 Days of SQL: The Complete SQL Masterclass",
+      issuer: "Udemy",
+      year: "2023",
+      icon: "/sqllogo.png"
+    }
+  ],
+  latestProjects: [
+    {
+      id: "latest-1",
+      title: "Virtual-Me RAG Chatbot",
+      description: "This site! A React application featuring a Gemini-powered AI chatbot (Agent) that tools your questions and answers them based on my actual resume data and tone.",
+      link: "https://www.ppaltsokas.com",
+      technologies: ["RAG", "FastAPI", "React", "Docker", "Embeddings", "Gemini API"]
+    },
+    {
+      id: "latest-2",
+      title: "AI Photo Library (Multimodal Retrieval)",
+      description: "Created an image indexing and semantic search system allowing natural-language queries over personal photo collections.",
+      technologies: ["Multimodal AI", "Image Embeddings", "Semantic Search", "Python"],
+      link: "https://github.com/ppaltsokas/ai-photo-manager"
+    },
+    {
+      id: "latest-3",
+      title: "AI News Automation (n8n + Discord)",
+      description: "Built a workflow that aggregates AI news from multiple sources, processes them, and publishes curated updates to a Discord server via bot integration.",
+      technologies: ["n8n", "Discord API", "Automation", "Web Scraping"]
+    },
+    {
+      id: "latest-4",
+      title: "GAIA-style Dataset Engineering",
+      description: "Designed adversarial prompt sets and evaluation logic to benchmark LLM reasoning, factuality, and tool-use failure modes.",
+      technologies: ["Dataset Engineering", "LLM Evaluation", "Adversarial Testing", "Python"]
+    }
+  ],
   projects: [
     {
       id: "proj-1",
@@ -76,51 +156,51 @@ export const RESUME_DATA: ResumeData = {
       technologies: ["Scikit-learn", "SVM", "PCA", "Gradient Boosting", "GridSearch"]
     },
     {
-      id: "proj-4",
-      title: "Virtual Persona CV",
-      description: "This site! A React application featuring a Gemini-powered AI chatbot (Agent) that tools your questions and answers them based on my actual resume data and tone.",
-      technologies: ["React", "Gemini API", "FastAPI", "Prompt Engineering"]
-    },
-    {
       id: "proj-5",
       title: "RAG Demo (afm_demo)",
       description: "A FastAPI + retrieval workflow application featuring local and containerized development environments and CI cleanup.",
-      technologies: ["FastAPI", "RAG", "Docker", "Google Cloud Run"]
+      technologies: ["FastAPI", "RAG", "Docker", "Google Cloud Run"],
+      link: "https://github.com/ppaltsokas/afm-demo"
     },
     {
       id: "proj-6",
       title: "Nobel Prizes Analysis",
       description: "Comprehensive data analysis of Nobel Prize winners, exploring trends, demographics, and patterns across different categories and time periods.",
       technologies: ["Python", "Pandas", "Data Analysis", "Visualization"],
-      pdfPath: "Data_Science_projects/Nobel_Prizes_Analysis.pdf"
+      pdfPath: "Data_Science_projects/Nobel_Prizes_Analysis.pdf",
+      link: "https://github.com/ppaltsokas/Nobel_Prize_Analysis"
     },
     {
       id: "proj-7",
       title: "Space Missions Analysis",
       description: "Analysis of space agencies, launch costs evolution, and mission outcomes over decades. Extracted actionable insights from historical space launch data.",
       technologies: ["Python", "Pandas", "Matplotlib", "Seaborn", "Data Analysis"],
-      pdfPath: "Data_Science_projects/Space_Missions_Analysis.pdf"
+      pdfPath: "Data_Science_projects/Space_Missions_Analysis.pdf",
+      link: "https://github.com/ppaltsokas/The_Space_Race"
     },
     {
       id: "proj-8",
       title: "Movie Budget and Financial Records",
       description: "Analysis of movie budgets, box office performance, and financial records to identify patterns and correlations in the film industry.",
       technologies: ["Python", "Data Analysis", "Financial Analysis", "Visualization"],
-      pdfPath: "Data_Science_projects/Movie_Budget_and_Financial_Records.pdf"
+      pdfPath: "Data_Science_projects/Movie_Budget_and_Financial_Records.pdf",
+      link: "https://github.com/ppaltsokas/Movie_Budgets_and_Financial_Performance"
     },
     {
       id: "proj-9",
       title: "Multivariable Regression and Valuation Model",
       description: "Built regression models to analyze and predict house prices using multiple variables, implementing valuation models for real estate data.",
       technologies: ["Python", "Regression", "Machine Learning", "Statistical Analysis"],
-      pdfPath: "Data_Science_projects/Multivariable_Regression_and_Valuation_Model.pdf"
+      pdfPath: "Data_Science_projects/Multivariable_Regression_and_Valuation_Model.pdf",
+      link: "https://github.com/ppaltsokas/70s_Boston_House_Prices"
     },
     {
       id: "proj-10",
       title: "Handwashing and Deaths at Childbirth",
       description: "Historical data analysis examining the relationship between handwashing practices and mortality rates in childbirth, demonstrating the impact of medical hygiene.",
       technologies: ["Python", "Data Analysis", "Statistical Analysis", "Historical Data"],
-      pdfPath: "Data_Science_projects/Handwashing and Deaths at Childbirth.pdf"
+      pdfPath: "Data_Science_projects/Handwashing and Deaths at Childbirth.pdf",
+      link: "https://github.com/ppaltsokas/Handwashing_and_Death_at_Childbirth"
     },
     {
       id: "proj-11",
