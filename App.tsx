@@ -95,8 +95,9 @@ const App: React.FC = () => {
 
           <div className="mt-8 lg:mt-0 hidden lg:block">
              <a 
-                href={`${API_URL}/me/cv`}
-                download="CV_PALTSOKAS_PANAGIOTIS.pdf"
+                href="https://drive.google.com/uc?export=download&id=1Shmj7Whniiiwkf7GfBsCqh4scbVQyHEA"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-900 font-semibold rounded-xl hover:bg-white transition-all shadow-lg shadow-white/5 active:scale-95"
              >
                <Download size={18} />
