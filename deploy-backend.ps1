@@ -8,13 +8,30 @@ $REGION = "europe-west8"
 $SERVICE_NAME = "virtual-persona-backend"
 $REPO_NAME = "virtual-persona-repo"
 
-# Get API key from environment variable (secure)
+# Get API key from environment variable or .env.local file
 $GEMINI_API_KEY = $env:GEMINI_API_KEY
+
+# If not set in environment, try reading from .env.local
 if (-not $GEMINI_API_KEY) {
-    Write-Host "ERROR: GEMINI_API_KEY environment variable is not set!" -ForegroundColor Red
-    Write-Host "Please set it before running this script:" -ForegroundColor Yellow
-    Write-Host "  `$env:GEMINI_API_KEY = 'your-api-key-here'" -ForegroundColor White
-    Write-Host "Or create a .env.local file with: GEMINI_API_KEY=your-api-key-here" -ForegroundColor White
+    $envLocalPath = ".env.local"
+    if (Test-Path $envLocalPath) {
+        Write-Host "Reading GEMINI_API_KEY from .env.local..." -ForegroundColor Yellow
+        $envContent = Get-Content $envLocalPath -Raw
+        if ($envContent -match "GEMINI_API_KEY\s*=\s*(.+)") {
+            $GEMINI_API_KEY = $matches[1].Trim()
+            # Remove quotes if present
+            $GEMINI_API_KEY = $GEMINI_API_KEY -replace '^["'']|["'']$', ''
+            Write-Host "Found GEMINI_API_KEY in .env.local" -ForegroundColor Green
+        }
+    }
+}
+
+# Final check - if still not set, show error
+if (-not $GEMINI_API_KEY) {
+    Write-Host "ERROR: GEMINI_API_KEY not found!" -ForegroundColor Red
+    Write-Host "Please set it in one of these ways:" -ForegroundColor Yellow
+    Write-Host "  1. Environment variable: `$env:GEMINI_API_KEY = 'your-api-key-here'" -ForegroundColor White
+    Write-Host "  2. Create .env.local file with: GEMINI_API_KEY=your-api-key-here" -ForegroundColor White
     exit 1
 }
 
