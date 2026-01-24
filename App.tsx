@@ -265,16 +265,29 @@ const App: React.FC = () => {
                             </div>
                           </div>
                           {cert.credentialUrl && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCredentialClick(cert.credentialUrl!);
-                              }}
-                              className="flex-shrink-0 p-1.5 text-slate-500 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
-                              title="Show credential"
-                            >
-                              <FileText size={16} />
-                            </button>
+                            cert.credentialUrl.includes('udemy.com/course/') ? (
+                              <a
+                                href={cert.credentialUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex-shrink-0 p-1.5 text-slate-500 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                                title="View course"
+                              >
+                                <ExternalLink size={16} />
+                              </a>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCredentialClick(cert.credentialUrl!);
+                                }}
+                                className="flex-shrink-0 p-1.5 text-slate-500 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                                title="Show credential"
+                              >
+                                <FileText size={16} />
+                              </button>
+                            )
                           )}
                         </div>
                       </div>

@@ -73,6 +73,14 @@ export const RESUME_DATA: ResumeData = {
   ],
   certifications: [
     {
+      id: "cert-0",
+      title: "AI Engineering Agentic Track – The Complete Agents Course by Ed Donner",
+      issuer: "Udemy",
+      year: "2025 (In Progress)",
+      icon: "/autonomy.png",
+      credentialUrl: "https://www.udemy.com/course/the-complete-agentic-ai-engineering-course/"
+    },
+    {
       id: "cert-1",
       title: "Hugging Face AI Agents Course",
       issuer: "Hugging Face",
@@ -136,9 +144,10 @@ export const RESUME_DATA: ResumeData = {
     },
     {
       id: "latest-4",
-      title: "GAIA-style Dataset Engineering",
-      description: "Designed adversarial prompt sets and evaluation logic to benchmark LLM reasoning, factuality, and tool-use failure modes.",
-      technologies: ["Dataset Engineering", "LLM Evaluation", "Adversarial Testing", "Python"]
+      title: "Hugging Face AI Agents (Applied)",
+      description: "Designed agentic AI systems to tackle GAIA benchmark tasks, emphasizing complex reasoning, tool selection, retrieval-augmented generation (RAG), and answer verification. Implemented dynamic tool routing, fallback strategies, and constrained local inference to improve accuracy on adversarial, multi-modal questions.",
+      technologies: ["AI Agents", "RAG", "Tool Calling", "LlamaIndex", "Hugging Face", "Agent Evaluation", "Python"],
+      link: "https://huggingface.co/spaces/ppaltsokas/ppaltsokas_GAIA_agent/tree/main"
     }
   ],
   projects: [

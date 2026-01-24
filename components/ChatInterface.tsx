@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Bot, User, Sparkles, X, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Minimize2, Trash2 } from 'lucide-react';
 import { createChatSession, ChatSession } from '../services/geminiService';
 import { MessageSender, ChatMessage } from '../types';
 import { INITIAL_CHAT_MESSAGE, API_URL } from '../constants';
@@ -51,6 +51,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const toastyAudioRef = useRef<HTMLAudioElement | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Project lists for expandable buttons
   const mlProjects = [
@@ -104,6 +105,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Handle click outside to minimize
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (chatContainerRef.current && !chatContainerRef.current.contains(event.target as Node)) {
+        // Check if the click is on the chat button itself
+        const chatButton = document.querySelector('.chat-button-container');
+        if (chatButton && chatButton.contains(event.target as Node)) {
+          return; // Don't close if clicking the chat button
+        }
+        // Check if the click is on a modal
+        const modal = document.querySelector('.fixed.inset-0.z-50');
+        if (modal && modal.contains(event.target as Node)) {
+          return; // Don't close if clicking on a modal
+        }
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   const handleSendMessage = useCallback(async () => {
     if (!input.trim() || !chatSession || isLoading) return;
@@ -308,7 +335,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
         }
       `}</style>
       
-      <div className={containerClasses}>
+      <div ref={chatContainerRef} className={containerClasses}>
         {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800/50 rounded-t-2xl">
         <div className="flex items-center gap-3">
@@ -333,9 +360,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
           <button 
             onClick={onClose}
             className="p-2 hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-white"
-            title="Close chat"
+            title="Minimize chat"
           >
-            <X size={20} />
+            <Minimize2 size={20} />
           </button>
         </div>
       </div>

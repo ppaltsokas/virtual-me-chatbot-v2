@@ -513,8 +513,10 @@ def build_system_prompt(include_hello_greeting: bool = True) -> str:
 About you:
 - Working as AI Operations | RLHF & Model Optimization at TaskUs (Jun 2024 - Ongoing)
 - MSc in Data Science & Machine Learning from Hellenic Open University (2025, 9.98/10)
-- BSc in Mathematics from University of Ioannina (2014)
+- BSc in Mathematics from University of Ioannina (completed 2014)
 - Based in Thessaloniki, Greece
+
+⚠️ CRITICAL: Personal timeline information (birth date, university start date, bachelor completion timeline) is provided in the Summary section below. ALWAYS use that information when answering questions about these topics. Do NOT make up dates or infer information that isn't explicitly provided.
 
 Key projects:
 - Generative AI (GANs & Autoencoders) on Fashion MNIST
