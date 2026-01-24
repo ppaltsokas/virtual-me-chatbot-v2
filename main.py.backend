@@ -1069,11 +1069,11 @@ class ChatRequest(BaseModel):
 
 @app.post("/chat")
 @limiter.limit("20/minute")  # Rate limit: 20 requests per minute per IP
-async def chat(http_request: Request, request: ChatRequest):
+async def chat(request: Request, chat_request: ChatRequest):
     """Chat endpoint with knowledge base integration and conversation memory."""
     try:
         # Get client IP and check if blocked
-        client_ip = get_client_ip(http_request)
+        client_ip = get_client_ip(request)
         if is_ip_blocked(client_ip):
             logger.warning(f"Blocked request from {client_ip}")
             raise HTTPException(
@@ -1082,7 +1082,7 @@ async def chat(http_request: Request, request: ChatRequest):
             )
         
         # Validate message length
-        if len(request.message) > MAX_MESSAGE_LENGTH:
+        if len(chat_request.message) > MAX_MESSAGE_LENGTH:
             record_failed_request(client_ip)
             raise HTTPException(
                 status_code=400,
@@ -1101,14 +1101,14 @@ async def chat(http_request: Request, request: ChatRequest):
         cleanup_old_sessions()
         
         # Get or create chat session
-        session_id = request.session_id or "default"
+        session_id = chat_request.session_id or "default"
         
         # Check if this is a new session (before locking)
         with session_lock:
             is_new_session = session_id not in chat_sessions
             if is_new_session:
                 # Check for "Hello there" greeting for new sessions
-                message_lower = request.message.strip().lower()
+                message_lower = chat_request.message.strip().lower()
                 is_hello_there = "hello there" in message_lower
                 include_greeting_rule = is_hello_there
                 
@@ -1129,7 +1129,7 @@ async def chat(http_request: Request, request: ChatRequest):
                 logger.info(f"Using existing chat session: {session_id}")
         
         # Create a simple hash of the message for first-message tracking
-        message_hash = hashlib.md5(request.message.strip().lower().encode()).hexdigest()
+        message_hash = hashlib.md5(chat_request.message.strip().lower().encode()).hexdigest()
         
         # Track if this is the first message in a conversation
         is_first_message = message_hash not in first_messages
@@ -1137,12 +1137,12 @@ async def chat(http_request: Request, request: ChatRequest):
             first_messages.add(message_hash)
         
         # Check for alerts
-        alert_msg = should_alert(request.message, message_hash=message_hash)
+        alert_msg = should_alert(chat_request.message, message_hash=message_hash)
         if alert_msg:
             push_notification(alert_msg)
             logger.info(f"Pushover alert sent: {alert_msg[:100]}")
         
-        logger.info(f"Received chat request (session: {session_id}): {request.message[:50]}...")
+        logger.info(f"Received chat request (session: {session_id}): {chat_request.message[:50]}...")
         
         # Store is_new_session in a way that's accessible in the closure
         session_is_new = is_new_session
@@ -1199,7 +1199,7 @@ async def chat(http_request: Request, request: ChatRequest):
                 # 1. New sessions with no history (first message ever)
                 # 2. Explicit random selection requests
                 # NEVER search KB for follow-up questions - rely on conversation history
-                wants_random = detect_random_selection_request(request.message)
+                wants_random = detect_random_selection_request(chat_request.message)
                 should_search_kb = (not has_history) or wants_random
                 
                 # Debug logging
@@ -1210,9 +1210,9 @@ async def chat(http_request: Request, request: ChatRequest):
                 
                 if should_search_kb:
                     # Search knowledge base for relevant information
-                    wants_random = detect_random_selection_request(request.message)
-                    logger.info(f"Searching KB - wants_random: {wants_random}, query: {request.message[:100]}")
-                    kb_results = search_knowledge_base(request.message, max_results=2, random_selection=wants_random)
+                    wants_random = detect_random_selection_request(chat_request.message)
+                    logger.info(f"Searching KB - wants_random: {wants_random}, query: {chat_request.message[:100]}")
+                    kb_results = search_knowledge_base(chat_request.message, max_results=2, random_selection=wants_random)
                     
                     if kb_results:
                         # Log what was found
@@ -1223,7 +1223,7 @@ async def chat(http_request: Request, request: ChatRequest):
                             kb_context = "\n\nRandomly selected project from my portfolio:\n\n"
                         else:
                             # Check if a specific project is mentioned
-                            query_lower_check = request.message.lower()
+                            query_lower_check = chat_request.message.lower()
                             if 'gaia' in query_lower_check:
                                 kb_context = "\n\nInformation about the GAIA Agent project that was requested:\n\n"
                             elif 'photo' in query_lower_check and ('manager' in query_lower_check or 'gallery' in query_lower_check):
@@ -1241,9 +1241,9 @@ async def chat(http_request: Request, request: ChatRequest):
                 
                 # Build the message - include KB context only if available
                 # For follow-up questions, the conversation history will provide context
-                user_message = request.message
+                user_message = chat_request.message
                 if kb_context:
-                    user_message = f"{kb_context}\n\nUser question: {request.message}"
+                    user_message = f"{kb_context}\n\nUser question: {chat_request.message}"
                 
                 # Log conversation history length for debugging
                 history_len = len(chat_session.history) if hasattr(chat_session, 'history') else 0
@@ -1273,7 +1273,7 @@ async def chat(http_request: Request, request: ChatRequest):
         raise
     except Exception as e:
         # Record failed request for spam detection
-        client_ip = get_client_ip(http_request)
+        client_ip = get_client_ip(request)
         record_failed_request(client_ip)
         error_msg = f"Unexpected error in chat endpoint: {str(e)}"
         logger.error(error_msg, exc_info=True)
