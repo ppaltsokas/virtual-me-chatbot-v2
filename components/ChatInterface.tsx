@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Bot, User, Sparkles, Minimize2, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Minimize2, Eraser } from 'lucide-react';
 import { createChatSession, ChatSession } from '../services/geminiService';
 import { MessageSender, ChatMessage } from '../types';
 import { INITIAL_CHAT_MESSAGE, API_URL } from '../constants';
@@ -355,7 +355,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
             title="Clear chat"
             disabled={isLoading}
           >
-            <Trash2 size={18} />
+            <Eraser size={18} />
           </button>
           <button 
             onClick={onClose}
