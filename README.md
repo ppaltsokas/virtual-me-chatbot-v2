@@ -4,6 +4,8 @@ An AI-powered professional portfolio that combines a traditional resume with a r
 
 🌐 **Live at**: https://www.ppaltsokas.com
 
+<!-- Force rebuild to pick up updated VITE_API_URL -->
+
 ## Why I Built This
 
 I wanted to explore how large language models can be combined with structured personal data to create more natural and informative professional interfaces. This project demonstrates my ability to design, build, and deploy AI systems that go beyond static content and provide contextual, explainable answers using retrieval-augmented generation (RAG).
