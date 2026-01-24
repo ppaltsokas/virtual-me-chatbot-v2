@@ -77,35 +77,40 @@ export const RESUME_DATA: ResumeData = {
       title: "Hugging Face AI Agents Course",
       issuer: "Hugging Face",
       year: "2025",
-      icon: "/huggingface-icon.png"
+      icon: "/huggingface-icon.png",
+      credentialUrl: "https://cas-bridge.xethub.hf.co/xet-bridge-us/6800ea554845e4edbca48825/12e11668ea3406870f808fff75513db533a2b4bf0e8687a86108ae7776b01e51?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260123%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260123T221550Z&X-Amz-Expires=3600&X-Amz-Signature=3d1991bc54e97bcb6f4826dbde5133dcb960ca17809f47fd3ba6f9e59770169e&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=652f0bb7821e30c4c03d9947&response-content-disposition=inline%3B+filename*%3DUTF-8%27%272025-11-13.png%3B+filename%3D%222025-11-13.png%22%3B&response-content-type=image%2Fpng&x-id=GetObject&Expires=1769210150&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc2OTIxMDE1MH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82ODAwZWE1NTQ4NDVlNGVkYmNhNDg4MjUvMTJlMTE2NjhlYTM0MDY4NzBmODA4ZmZmNzU1MTNkYjUzM2EyYjRiZjBlODY4N2E4NjEwOGFlNzc3NmIwMWU1MSoifV19&Signature=qcA5uDuH68Gv0-jSbxgki1JYnqBczp3ZpvBmQf2j%7ECF1%7EgqaPi-6FKgdJXkl-eTFhFj%7EJpUROyTUbnjXUUwt2xrvyblbSybg8vXYMGrI4ENm4VNRYB5K6h1MianKVfAXPdQ3gyRJZFLijuToooow5xCIDYTTRZGi78bpGjOwmKN3AqwuIos36s1Xj-9hRTPyitQkmrNfNKtUs08VHI%7Ex%7E3fCqXws35d-t33xPesXw1lVG9jjd3Qb3qkF6zESN3KYRPiny2m6hdVw3%7Edoy-h5aFvVo5eaZo5wLLpMn0RSJ%7Es7TuKCgY3ocWgnHj6M%7Ed0OqZYp0Luo4tsGeQvfwP9jug__&Key-Pair-Id=K2L8F4GPSG1IFC"
     },
     {
       id: "cert-2",
       title: "Large Language Models: Application Through Production",
       issuer: "edX & Databricks",
       year: "2024",
-      icon: "/openai logo.png"
+      icon: "/openai logo.png",
+      credentialUrl: "https://courses.edx.org/certificates/c89a6cf2b6ed481c9e2539453aa4ac13"
     },
     {
       id: "cert-3",
       title: "100 Days of Code: The Complete Python Pro Bootcamp",
       issuer: "Udemy",
       year: "2024",
-      icon: "/python_logo.png"
+      icon: "/python_logo.png",
+      credentialUrl: "https://udemy-certificate.s3.amazonaws.com/image/UC-c0bed077-fb93-4836-913f-59f27094d88e.jpg?v=1693949589000"
     },
     {
       id: "cert-4",
       title: "R Programming A-Z: R for Data Science",
       issuer: "Udemy",
       year: "2023",
-      icon: "/Rlogo.png"
+      icon: "/Rlogo.png",
+      credentialUrl: "https://udemy-certificate.s3.amazonaws.com/image/UC-7c067816-0391-42e0-a1d4-5c85b114b0e9.jpg?v=1689802685000"
     },
     {
       id: "cert-5",
       title: "15 Days of SQL: The Complete SQL Masterclass",
       issuer: "Udemy",
       year: "2023",
-      icon: "/sqllogo.png"
+      icon: "/sqllogo.png",
+      credentialUrl: "https://udemy-certificate.s3.amazonaws.com/image/UC-41633ad7-89c3-4161-8066-b391cd135f0d.jpg?v=1705661249000"
     }
   ],
   latestProjects: [

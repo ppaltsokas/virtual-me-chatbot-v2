@@ -12,7 +12,9 @@ import {
   MessageSquare,
   Download,
   GraduationCap,
-  Award
+  Award,
+  FileText,
+  X
 } from 'lucide-react';
 import { RESUME_DATA, API_URL } from './constants';
 import ChatInterface from './components/ChatInterface';
@@ -20,6 +22,7 @@ import ChatInterface from './components/ChatInterface';
 const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedCredential, setSelectedCredential] = useState<string | null>(null);
   const { personalInfo, experience, education, certifications, latestProjects, projects, skills } = RESUME_DATA;
 
   // Responsive layout detection
@@ -38,6 +41,50 @@ const App: React.FC = () => {
   }, []);
 
   const toggleChat = () => setIsChatOpen(!isChatOpen);
+
+  // Helper function to check if URL is an image or HTML page
+  const isImageUrl = (url: string): boolean => {
+    // Check for image file extensions
+    const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i;
+    if (imageExtensions.test(url)) {
+      return true;
+    }
+    
+    // Check for known HTML page domains
+    const htmlDomains = ['courses.edx.org', 'edx.org'];
+    const urlObj = new URL(url);
+    if (htmlDomains.some(domain => urlObj.hostname.includes(domain))) {
+      return false;
+    }
+    
+    // Check if URL contains image-related query parameters (like Hugging Face URLs)
+    if (url.includes('response-content-type=image') || url.includes('image/')) {
+      return true;
+    }
+    
+    // Default: assume it's an image if it doesn't match HTML domains
+    return true;
+  };
+
+  // Handle credential click - open in modal if image, new tab if HTML
+  const handleCredentialClick = (url: string) => {
+    if (isImageUrl(url)) {
+      setSelectedCredential(url);
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Close modal on ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedCredential) {
+        setSelectedCredential(null);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [selectedCredential]);
 
   return (
     <div className="min-h-screen bg-slate-950 selection:bg-indigo-500/30">
@@ -208,11 +255,27 @@ const App: React.FC = () => {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold text-slate-200 mb-1">{cert.title}</h3>
-                        <div className="flex flex-wrap items-center gap-2 text-sm">
-                          <span className="text-slate-400">{cert.issuer}</span>
-                          <span className="text-slate-600">•</span>
-                          <span className="text-slate-500 font-mono">{cert.year}</span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-slate-200 mb-1">{cert.title}</h3>
+                            <div className="flex flex-wrap items-center gap-2 text-sm">
+                              <span className="text-slate-400">{cert.issuer}</span>
+                              <span className="text-slate-600">•</span>
+                              <span className="text-slate-500 font-mono">{cert.year}</span>
+                            </div>
+                          </div>
+                          {cert.credentialUrl && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCredentialClick(cert.credentialUrl!);
+                              }}
+                              className="flex-shrink-0 p-1.5 text-slate-500 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                              title="Show credential"
+                            >
+                              <FileText size={16} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -442,6 +505,48 @@ const App: React.FC = () => {
           <MessageSquare size={24} />
         </button>
       </div>
+
+      {/* Certificate Modal */}
+      {selectedCredential && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setSelectedCredential(null)}
+        >
+          <div 
+            className="relative max-w-4xl max-h-[90vh] w-full bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedCredential(null)}
+              className="absolute top-4 right-4 z-10 p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+            
+            {/* Certificate Image */}
+            <div className="overflow-auto max-h-[90vh]">
+              <img 
+                src={selectedCredential} 
+                alt="Certificate"
+                className="w-full h-auto"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const errorDiv = target.parentElement?.querySelector('.error-message');
+                  if (!errorDiv) {
+                    const div = document.createElement('div');
+                    div.className = 'error-message p-8 text-center text-slate-400';
+                    div.textContent = 'Failed to load certificate image.';
+                    target.parentElement?.appendChild(div);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chat Interface */}
       <ChatInterface 

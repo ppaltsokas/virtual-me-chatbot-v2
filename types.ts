@@ -34,6 +34,7 @@ export interface Certification {
   issuer: string;
   year: string;
   icon?: string; // Icon URL or image path for the certification logo
+  credentialUrl?: string; // URL to the certificate image/document
 }
 
 export interface Project {
