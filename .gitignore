@@ -64,3 +64,34 @@ build/
 # Backup folders
 BACKUP*/
 backup*/
+
+# Local automation scripts (QoL for local development only)
+start-backend.ps1
+start-frontend.ps1
+start-frontend.sh
+start.sh.backend
+deploy-backend.ps1
+fix-cloud-run-key.ps1
+update-cloud-run-key.ps1
+
+# Personal notes and debugging docs (not for public repo)
+CHAT_DEBUG_RESULTS.md
+FIX_SUMMARY.md
+CLOUD_RUN_FIXES.md
+PRODUCTION_DEBUG_STEPS.md
+QUICK_START.md
+DEV_NOTES.md
+NEXT_STEPS.md
+DEPLOYMENT_CHECKLIST.md
+NAMECHEAP_RAILWAY_SETUP.md
+DOMAIN_SETUP.md
+VERIFY_SETUP.md
+CONVERT_NOTEBOOKS.md
+
+# Test and utility scripts (local development only)
+test_chat_with_logs.py
+test_openai_key.py
+build_faiss_index.py
+
+# Debug logs
+backend_debug.log
