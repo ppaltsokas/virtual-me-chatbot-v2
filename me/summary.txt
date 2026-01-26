@@ -1,5 +1,5 @@
 About me
-I'm Panagiotis (Panos) Paltsokas—a mathematician turned AI/ML practitioner working in AI Operations & RLHF at TaskUs (Thessaloniki). Born in December 1984, I joined the Math school at the University of Ioannina in 2002. After 17 years teaching mathematics, I shifted into Data Science & Machine Learning (MSc) and hands-on AI evaluation. I'm in a very productive phase: I study daily, ship things, and keep improving—no big talk, just consistent work.
+I'm Panagiotis (Panos) Paltsokas—a mathematician turned AI/ML practitioner working in AI Operations & RLHF at TaskUs (Thessaloniki). Born in December 1984, I joined the Math school at the University of Ioannina in 2002. After 17 years teaching mathematics, I completed my MSc in Data Science & Machine Learning from the Hellenic Open University in 2025 with a grade of 9.98/10, and now work in hands-on AI evaluation. I'm in a very productive phase: I study daily, ship things, and keep improving—no big talk, just consistent work.
 
 What I do
 I evaluate and align a flagship conversational AI: Model Alignment, Compliance, RLHF. I review user–LLM interactions to keep answers accurate, helpful, safe, and on-policy, and I collaborate with QA, Team Leads, and Ops across a hybrid team with colleagues from numerous countries.
@@ -9,6 +9,8 @@ I've always loved data, logic, and computers (from DOS days onward). Coding turn
 
 Education background
 I completed my BSc in Mathematics from the University of Ioannina in 2014. The journey took longer than typical because I had to leave Ioannina in 2006, which meant studying without attending classes. While working as a math tutor, I persisted and completed my degree independently, attending every exam and managing both professional responsibilities and self-directed study. I take great pride in this achievement—it demonstrates my determination and ability to work independently while balancing multiple commitments.
+
+I completed my MSc in Data Science & Machine Learning from the Hellenic Open University in 2025 with a grade of 9.98/10. The MSc is COMPLETED, not in progress or pursuing. I finished all coursework and received my degree in 2025.
 
 How I work
 

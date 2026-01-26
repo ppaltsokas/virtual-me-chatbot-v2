@@ -1105,9 +1105,11 @@ def build_system_prompt(include_hello_greeting: bool = True) -> str:
     # Build the "About you" section with embedded critical facts
     about_you = """About you:
 - Working as AI Operations | RLHF & Model Optimization at TaskUs (Jun 2024 - Ongoing)
-- MSc in Data Science & Machine Learning from Hellenic Open University (2025, 9.98/10)
-- BSc in Mathematics from University of Ioannina (completed 2014)
-- Based in Thessaloniki, Greece"""
+- COMPLETED MSc in Data Science & Machine Learning from Hellenic Open University in 2025 (grade 9.98/10) - NOT pursuing, COMPLETED
+- COMPLETED BSc in Mathematics from University of Ioannina in 2014
+- Based in Thessaloniki, Greece
+
+CRITICAL: When asked about education, ALWAYS state that the MSc was COMPLETED in 2025, NOT pursuing. Never say "pursuing", "currently studying", or "expected to complete". The MSc is COMPLETED."""
     
     # Add critical facts directly if extracted
     if critical_facts:
@@ -1993,6 +1995,21 @@ async def chat(request: Request, chat_request: ChatRequest):
                         media_type="text/plain"
                     )
         
+        # Deterministic short-circuit for MSc completion status (guaranteed correct answer)
+        # Only trigger if explicitly asking about education/degree, not general data science questions
+        education_keywords = ['education', 'educational background', 'degree', 'master', 'msc', 'm.sc', 'graduate', 'studied']
+        is_education_question = any(keyword in message_lower for keyword in education_keywords)
+        msc_keywords = ['data science', 'data science & machine learning']
+        is_asking_about_msc = any(keyword in message_lower for keyword in msc_keywords) and is_education_question
+        
+        if is_asking_about_msc or (message_lower in ['what about data science?', 'what about data science'] and 'education' in message_lower):
+            msc_response = "I completed my MSc in Data Science & Machine Learning from the Hellenic Open University in 2025 with a grade of 9.98/10. The degree is COMPLETED, not in progress or pursuing."
+            logger.info(f"Deterministic MSc completion response: {msc_response}")
+            return StreamingResponse(
+                iter([msc_response]),
+                media_type="text/plain"
+            )
+        
         # Get or create chat session with prompt versioning (Fix B)
         raw_session_id = chat_request.session_id or "default"
         # Prefix with prompt version to force recreation when prompt changes
@@ -2244,9 +2261,36 @@ async def chat(request: Request, chat_request: ChatRequest):
                 # Collect full response for evaluation and Q&A saving
                 full_response = ""
                 for chunk in response:
-                    if chunk.text:
-                        full_response += chunk.text
-                        yield chunk.text
+                    # Handle safety-blocked responses
+                    try:
+                        # Check for safety blocks in candidates
+                        if hasattr(chunk, 'candidates') and chunk.candidates:
+                            candidate = chunk.candidates[0]
+                            if hasattr(candidate, 'finish_reason'):
+                                finish_reason = candidate.finish_reason
+                                # finish_reason 3 = SAFETY, but sometimes blocked responses show as 1 (STOP) with no content
+                                if finish_reason == 3 or (finish_reason == 1 and not hasattr(candidate, 'content')):
+                                    logger.warning(f"Response blocked by safety filter (finish_reason={finish_reason})")
+                                    error_msg = "I apologize, but I couldn't generate a response due to content safety filters. Could you rephrase your question?"
+                                    full_response = error_msg
+                                    yield error_msg
+                                    break
+                        
+                        # Try to get text, handle ValueError if response is blocked
+                        if chunk.text:
+                            full_response += chunk.text
+                            yield chunk.text
+                    except ValueError as e:
+                        # Handle case where chunk.text throws ValueError (no valid Part - safety block)
+                        error_str = str(e)
+                        if "finish_reason" in error_str or "valid Part" in error_str or "none were returned" in error_str:
+                            logger.warning(f"Response blocked - no valid Part returned: {e}")
+                            error_msg = "I apologize, but I couldn't generate a response due to content safety filters. Could you rephrase your question?"
+                            full_response = error_msg
+                            yield error_msg
+                            break
+                        else:
+                            raise  # Re-raise if it's a different ValueError
                 
                 # Log the model's response
                 logger.info(f"=== MODEL RESPONSE (session: {session_id}) ===")
