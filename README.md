@@ -97,24 +97,24 @@ The system only searches the knowledge base on initial queries or explicit reque
 
 ### Installation
 
-```bash
+   ```bash
 # Clone repository
-git clone https://github.com/ppaltsokas/virtual-me-chatbot-v2.git
-cd virtual-me-chatbot-v2
+   git clone https://github.com/ppaltsokas/virtual-me-chatbot-v2.git
+   cd virtual-me-chatbot-v2
 
 # Install frontend dependencies
-npm install
-
+   npm install
+   
 # Install backend dependencies
 pip install -r requirements.txt.backend
-```
+   ```
 
 ### Configuration
 
 Create a `.env.local` file:
 
 ```env
-GEMINI_API_KEY=your_api_key_here
+     GEMINI_API_KEY=your_api_key_here
 VITE_API_URL=http://localhost:8000
 ```
 
@@ -174,7 +174,7 @@ The portfolio is live and fully functional with custom domain, SSL certificate, 
 
 ## Author
 
-**Panagiotis Paltsokas**  
+**Panagiotis Paltsokas**
 Data Scientist / AI Trust & Safety Professional  
 Working at TaskUs (AI Operations | RLHF & Model Optimization)  
 MSc in Data Science & Machine Learning | BSc in Mathematics  

@@ -22,23 +22,68 @@ import threading
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+import sqlite3
+import numpy as np
+FAISS_AVAILABLE = False
+OPENAI_AVAILABLE = False
+NBFORMAT_AVAILABLE = False
+
+try:
+    import faiss
+    FAISS_AVAILABLE = True
+except ImportError:
+    pass
+
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    pass
+
+try:
+    import nbformat
+    NBFORMAT_AVAILABLE = True
+except ImportError:
+    pass
 
 # Configure logging first
+# Configure logging to both console and file
+log_file = Path("backend_debug.log")
+file_handler = logging.FileHandler(log_file, encoding='utf-8')
+file_handler.setLevel(logging.INFO)
+file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(file_formatter)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(console_formatter)
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[console_handler, file_handler]
 )
 logger = logging.getLogger(__name__)
 
+# Log availability of optional dependencies
+if not FAISS_AVAILABLE:
+    logger.warning("FAISS not available. Vector search will be disabled.")
+if not OPENAI_AVAILABLE:
+    logger.warning("OpenAI not available. Tool calling will use Gemini only.")
+if not NBFORMAT_AVAILABLE:
+    logger.warning("nbformat not available. Jupyter notebook support disabled.")
+
 # Load environment variables from .env.local file
+# Use override=True to ensure .env.local takes precedence over system environment variables
 env_path = Path('.env.local')
 if env_path.exists():
-    load_dotenv(dotenv_path=env_path)
-    logger.info(f"Loaded environment variables from {env_path}")
+    load_dotenv(dotenv_path=env_path, override=True)
+    logger.info(f"Loaded environment variables from {env_path} (overriding system vars)")
 else:
     # Fallback to .env if .env.local doesn't exist
-    load_dotenv()
-    logger.info("Loaded environment variables from .env file")
+    load_dotenv(override=True)
+    logger.info("Loaded environment variables from .env file (overriding system vars)")
 
 app = FastAPI(
     title="Virtual Persona CV API",
@@ -113,6 +158,15 @@ hello_there_sessions: set = set()  # Track by session identifier
 chat_sessions: Dict[str, genai.ChatSession] = {}
 # Store session timestamps for cleanup
 session_timestamps: Dict[str, datetime] = {}
+# Store prompt hashes per session for versioning (Fix B)
+session_prompts: Dict[str, str] = {}  # session_id -> prompt_hash
+
+# System prompt versioning to force session recreation when prompt changes (Fix B)
+SYSTEM_PROMPT_VERSION = os.getenv("SYSTEM_PROMPT_VERSION", "2026-01-26_v2")
+
+def _prompt_hash(s: str) -> str:
+    """Generate hash of prompt for versioning (Fix B)."""
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
 # Lock for thread-safe session access
 session_lock = threading.Lock()
 
@@ -209,8 +263,15 @@ def should_alert(message: str, message_hash: Optional[str] = None) -> Optional[s
     return None
 
 # Knowledge Base Configuration
-KB_FOLDER = Path("kb")
-ME_FOLDER = Path("me")  # Persona/profile data folder
+# Use absolute paths relative to this Python file to avoid path drift in Cloud Run
+BASE_DIR = Path(__file__).resolve().parent
+KB_FOLDER = BASE_DIR / "kb"
+ME_FOLDER = BASE_DIR / "me"  # Persona/profile data folder
+
+# Log paths for debugging
+logger.info(f"BASE_DIR: {BASE_DIR}")
+logger.info(f"KB_FOLDER: {KB_FOLDER} (exists: {KB_FOLDER.exists()})")
+logger.info(f"ME_FOLDER: {ME_FOLDER} (exists: {ME_FOLDER.exists()})")
 
 # Load and cache knowledge base
 knowledge_base: Dict[str, str] = {}
@@ -224,6 +285,479 @@ persona_metadata: Dict[str, Dict] = {}  # Store metadata like file type, size, e
 # Images folder for extracted PDF images
 IMAGES_FOLDER = Path("kb/images")
 IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
+
+# =============================================================
+# SQLite Q&A Database (Persistent Memory)
+# =============================================================
+DATA_FOLDER = Path("data")
+DATA_FOLDER.mkdir(parents=True, exist_ok=True)
+QADB = DATA_FOLDER / "qadb.sqlite"
+
+def _qadb_conn():
+    """Create and return a connection to the Q&A database."""
+    con = sqlite3.connect(str(QADB))
+    con.execute("PRAGMA journal_mode=WAL;")
+    con.execute("PRAGMA synchronous=NORMAL;")
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS qa(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question TEXT NOT NULL,
+            answer TEXT NOT NULL,
+            tags TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );"""
+    )
+    con.execute(
+        """
+        CREATE VIRTUAL TABLE IF NOT EXISTS qa_fts USING fts5(
+            question, answer, tags, content='',
+            tokenize = 'unicode61 remove_diacritics 2'
+        );"""
+    )
+    return con
+
+def qadb_lookup(question: str, fuzzy: bool = True, limit: int = 5) -> Dict:
+    """Search the Q&A database for similar questions."""
+    con = _qadb_conn()
+    cur = con.cursor()
+    if fuzzy:
+        try:
+            cur.execute(
+                """
+                SELECT question, answer, tags
+                FROM qa_fts
+                WHERE qa_fts MATCH ?
+                ORDER BY bm25(qa_fts) ASC
+                LIMIT ?;
+                """,
+                (f'"{question}"', limit),
+            )
+        except sqlite3.OperationalError:
+            cur.execute(
+                """
+                SELECT question, answer, tags
+                FROM qa_fts
+                WHERE qa_fts MATCH ?
+                ORDER BY bm25(qa_fts) ASC
+                LIMIT ?;
+                """,
+                (question, limit),
+            )
+    else:
+        cur.execute(
+            "SELECT question, answer, tags FROM qa WHERE question = ? ORDER BY id DESC LIMIT ?",
+            (question, limit),
+        )
+    rows = cur.fetchall()
+    con.close()
+    return {"results": [{"question": q, "answer": a, "tags": t} for (q, a, t) in rows]}
+
+def qadb_upsert(question: str, answer: str, tags: str = None) -> Dict:
+    """Save a Q&A pair to the database."""
+    con = _qadb_conn()
+    cur = con.cursor()
+    cur.execute(
+        "INSERT INTO qa(question, answer, tags) VALUES (?, ?, ?)",
+        (question, answer, tags),
+    )
+    cur.execute(
+        "INSERT INTO qa_fts(rowid, question, answer, tags) VALUES (last_insert_rowid(), ?, ?, ?)",
+        (question, answer, tags),
+    )
+    con.commit()
+    con.close()
+    logger.info(f"Saved Q&A to database: {question[:50]}...")
+    return {"saved": True}
+
+# =============================================================
+# FAISS Vector Search (Semantic Search)
+# =============================================================
+FAISS_DIR = Path("models/faiss")
+FAISS_DIR.mkdir(parents=True, exist_ok=True)
+FAISS_INDEX = FAISS_DIR / "index.faiss"
+FAISS_STORE = FAISS_DIR / "store.jsonl"
+EMBEDDINGS_MODEL = os.getenv("EMBEDDINGS_MODEL", "text-embedding-3-small")
+
+# Embedding model hard limit is 8192 tokens per input
+EMBED_MAX_TOKENS = int(os.getenv("EMBED_MAX_TOKENS", "8192"))
+# Use a safety margin to avoid off-by-a-few tokenization differences
+EMBED_TARGET_TOKENS = int(os.getenv("EMBED_TARGET_TOKENS", "7800"))
+
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+    logger.warning("tiktoken not available. Token counting will be estimated.")
+
+def _get_embed_encoding():
+    """Get the tokenizer encoding for the embedding model."""
+    if not TIKTOKEN_AVAILABLE:
+        return None
+    # text-embedding-3-* uses cl100k_base
+    return tiktoken.get_encoding("cl100k_base")
+
+def count_tokens(text: str) -> int:
+    """Count tokens in text using tiktoken (accurate) or estimate (fallback)."""
+    if TIKTOKEN_AVAILABLE:
+        enc = _get_embed_encoding()
+        return len(enc.encode(text or ""))
+    else:
+        # Fallback: estimate ~4 chars per token
+        return len(text or "") // 4
+
+def split_text_by_tokens(text: str, max_tokens: int = EMBED_TARGET_TOKENS) -> List[str]:
+    """
+    Split text into chunks of <= max_tokens using the tokenizer (hard guarantee).
+    Tries to split on paragraph/sentence boundaries near the end of each chunk.
+    """
+    if not text or not text.strip():
+        return []
+    
+    if not TIKTOKEN_AVAILABLE:
+        # Fallback: use character-based splitting
+        max_chars = max_tokens * 4
+        if len(text) <= max_chars:
+            return [text] if text.strip() else []
+        # Simple character-based split
+        chunks = []
+        for i in range(0, len(text), max_chars):
+            chunk = text[i:i + max_chars]
+            if chunk.strip():
+                chunks.append(chunk.strip())
+        return chunks
+    
+    enc = _get_embed_encoding()
+    toks = enc.encode(text or "")
+    if len(toks) <= max_tokens:
+        return [text] if text.strip() else []
+
+    chunks = []
+    start = 0
+    while start < len(toks):
+        end = min(start + max_tokens, len(toks))
+        chunk_text = enc.decode(toks[start:end])
+
+        # Try to move end backward to a natural boundary within the last ~400 chars
+        # (keeps semantics cleaner than raw token slicing)
+        if end < len(toks):
+            window = chunk_text[-400:]
+            cut = None
+            for sep in ["\n\n", "\n", ". ", "! ", "? ", "; "]:
+                idx = window.rfind(sep)
+                if idx != -1:
+                    cut = len(chunk_text) - 400 + idx + len(sep)
+                    break
+            if cut and cut > 200:
+                chunk_text = chunk_text[:cut].rstrip()
+                # Recompute start position based on tokens actually used
+                used = len(enc.encode(chunk_text))
+                end = start + used
+
+        chunk_text = chunk_text.strip()
+        if chunk_text:
+            chunks.append(chunk_text)
+
+        start = end
+
+    return chunks
+
+# OpenAI client for embeddings (if available)
+# Explicitly prioritize .env.local over system environment variables
+openai_client: Optional[OpenAI] = None
+if OPENAI_AVAILABLE:
+    openai_api_key = None
+    # First, explicitly read from .env.local if it exists
+    env_path = Path('.env.local')
+    if env_path.exists():
+        from dotenv import dotenv_values
+        env_vars = dotenv_values(dotenv_path=env_path)
+        openai_api_key = env_vars.get('OPENAI_API_KEY')
+        if openai_api_key:
+            logger.info("OpenAI API key loaded from .env.local")
+    
+    # Fallback to environment variable if not found in .env.local
+    if not openai_api_key:
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if openai_api_key:
+            logger.info("OpenAI API key loaded from environment variable")
+    
+    if openai_api_key:
+        openai_client = OpenAI(api_key=openai_api_key)
+        logger.info("OpenAI client initialized for embeddings")
+    else:
+        logger.warning("OPENAI_API_KEY not set. FAISS vector search will be disabled.")
+
+def embed_texts(texts: List[str]) -> List[List[float]]:
+    """Generate embeddings for a list of texts, batching to avoid token limits.
+    
+    Uses token-based batching to ensure we stay under the 300k token limit per request.
+    """
+    if not openai_client:
+        raise RuntimeError("OpenAI client not initialized. Set OPENAI_API_KEY environment variable.")
+    
+    if not texts:
+        return []
+    
+    # OpenAI limits: max 2048 inputs per request, and ~300k tokens per request
+    # Estimate tokens: ~4 characters per token (conservative estimate)
+    # Target: stay well under 200k tokens per batch for safety
+    MAX_TOKENS_PER_BATCH = 200000  # Conservative limit (well under 300k)
+    CHARS_PER_TOKEN = 4  # Conservative estimate
+    
+    all_embeddings = []
+    current_batch = []
+    current_batch_tokens = 0
+    batch_num = 0
+    
+    logger.info(f"Embedding {len(texts)} texts using token-based batching (max {MAX_TOKENS_PER_BATCH} tokens/batch)...")
+    
+    for text in texts:
+        # Count tokens accurately using tiktoken
+        text_tokens = count_tokens(text)
+        
+        # If adding this text would exceed the limit, process current batch first
+        if current_batch and (current_batch_tokens + text_tokens > MAX_TOKENS_PER_BATCH):
+            batch_num += 1
+            try:
+                logger.info(f"Processing batch {batch_num} ({len(current_batch)} texts, ~{current_batch_tokens} tokens)...")
+                resp = openai_client.embeddings.create(
+                    model=EMBEDDINGS_MODEL, 
+                    input=current_batch, 
+                    timeout=120.0
+                )
+                batch_embeddings = [d.embedding for d in resp.data]
+                all_embeddings.extend(batch_embeddings)
+                logger.info(f"Batch {batch_num} completed ({len(batch_embeddings)} embeddings)")
+            except Exception as e:
+                logger.error(f"Embedding failed for batch {batch_num}: {e}")
+                raise
+            
+            # Reset for next batch
+            current_batch = []
+            current_batch_tokens = 0
+        
+        # Hard per-input safety check (token-accurate)
+        # This should rarely trigger since we token-split during build_faiss_index,
+        # but it's a critical safety net
+        actual_tokens = count_tokens(text)
+        if actual_tokens > EMBED_MAX_TOKENS:
+            logger.warning(f"Text still exceeds EMBED_MAX_TOKENS ({actual_tokens} tokens) after preprocessing; splitting again.")
+            # Split using token-accurate method
+            split_chunks = split_text_by_tokens(text, max_tokens=EMBED_TARGET_TOKENS)
+            if split_chunks:
+                logger.info(f"Splitting oversized text into {len(split_chunks)} token-safe chunks")
+                split_embeddings = embed_texts(split_chunks)
+                all_embeddings.extend(split_embeddings)
+            continue
+        
+        # Add text to current batch (now guaranteed to be token-safe)
+        current_batch.append(text)
+        current_batch_tokens += actual_tokens  # Use actual token count, not estimate
+    
+    # Process remaining batch
+    if current_batch:
+        batch_num += 1
+        try:
+            logger.info(f"Processing final batch {batch_num} ({len(current_batch)} texts, ~{current_batch_tokens} tokens)...")
+            resp = openai_client.embeddings.create(
+                model=EMBEDDINGS_MODEL, 
+                input=current_batch, 
+                timeout=120.0
+            )
+            batch_embeddings = [d.embedding for d in resp.data]
+            all_embeddings.extend(batch_embeddings)
+            logger.info(f"Final batch {batch_num} completed ({len(batch_embeddings)} embeddings)")
+        except Exception as e:
+            logger.error(f"Embedding failed for final batch {batch_num}: {e}")
+            raise
+    
+    logger.info(f"Successfully embedded all {len(all_embeddings)} texts in {batch_num} batches")
+    return all_embeddings
+
+def _split_md(text: str, max_chars: int = 30000) -> List[str]:
+    """Split markdown text into chunks.
+    
+    Respects OpenAI embedding model limit: max 8192 tokens per input (~32k chars).
+    Uses max_chars=30000 to stay well under the limit.
+    """
+    # OpenAI embedding models have max 8192 tokens per input
+    # With ~4 chars per token, that's ~32k chars max
+    # Use 30k to be safe
+    MAX_CHARS_PER_CHUNK = 30000
+    
+    parts, buf, count = [], [], 0
+    for line in text.splitlines(keepends=True):
+        line_len = len(line)
+        
+        # If a single line is too long, split it
+        if line_len > MAX_CHARS_PER_CHUNK:
+            # Save current buffer if any
+            if buf:
+                parts.append("".join(buf).strip())
+                buf, count = [], 0
+            
+            # Split the long line into smaller chunks
+            for i in range(0, line_len, MAX_CHARS_PER_CHUNK):
+                chunk = line[i:i + MAX_CHARS_PER_CHUNK]
+                if chunk.strip():
+                    parts.append(chunk.strip())
+            continue
+        
+        # If adding this line would exceed limit, save current buffer
+        if count + line_len > MAX_CHARS_PER_CHUNK and buf:
+            parts.append("".join(buf).strip())
+            buf, count = [], 0
+        
+        buf.append(line)
+        count += line_len
+        
+        # Split at headers to keep semantic coherence
+        if line.strip().startswith(("#", "##", "###")) and buf and count > 1000:
+            parts.append("".join(buf).strip())
+            buf, count = [], 0
+    
+    if buf:
+        parts.append("".join(buf).strip())
+    
+    # Final safety check: ensure no chunk exceeds limit
+    final_parts = []
+    for part in parts:
+        if len(part) > MAX_CHARS_PER_CHUNK:
+            # Split oversized chunks
+            for i in range(0, len(part), MAX_CHARS_PER_CHUNK):
+                chunk = part[i:i + MAX_CHARS_PER_CHUNK]
+                if chunk.strip():
+                    final_parts.append(chunk.strip())
+        else:
+            final_parts.append(part)
+    
+    return [p for p in final_parts if p]
+
+def read_ipynb_text(path: Path) -> str:
+    """Read Jupyter notebook and preserve markdown comments and code structure."""
+    if not NBFORMAT_AVAILABLE:
+        logger.warning(f"nbformat not installed; skipping .ipynb: {path}")
+        return ""
+    try:
+        nb = nbformat.read(str(path), as_version=4)
+        parts = []
+        for i, cell in enumerate(nb.cells):
+            if cell.cell_type == "markdown":
+                parts.append(f"=== MARKDOWN CELL {i+1} (INSIGHTS/EXPLANATIONS) ===\n{cell.source}\n")
+            elif cell.cell_type == "code":
+                code_text = cell.source
+                if hasattr(cell, 'outputs') and cell.outputs:
+                    code_text += "\n# [Code execution results present in original notebook]"
+                parts.append(f"=== CODE CELL {i+1} ===\n```code\n{code_text}\n```\n")
+        return "\n\n".join(parts)
+    except Exception as e:
+        logger.error(f"Error reading notebook {path}: {e}")
+        return ""
+
+def build_faiss_index() -> int:
+    """Build FAISS index from knowledge base files."""
+    if not FAISS_AVAILABLE or not openai_client:
+        logger.warning("FAISS or OpenAI not available. Skipping index build.")
+        return 0
+    
+    texts, meta = [], []
+    pdf_count, other_count = 0, 0
+    
+    logger.info("[FAISS] Starting to index files from kb/ directory...")
+    supported_extensions = ['*.pdf', '*.txt', '*.md', '*.ipynb']
+    files = []
+    for ext in supported_extensions:
+        files.extend(list(KB_FOLDER.rglob(ext)))
+    
+    logger.info(f"[FAISS] Found {len(files)} files to index")
+    
+    for fp in files:
+        logger.info(f"[FAISS] Processing: {fp}")
+        if fp.suffix.lower() == '.ipynb':
+            raw = read_ipynb_text(fp)
+        else:
+            raw = extract_text_from_file(fp)
+        
+        if not raw.strip():
+            logger.warning(f"[FAISS] Warning: {fp} has no extractable text")
+            continue
+        
+        if fp.suffix.lower() == '.pdf':
+            pdf_count += 1
+        else:
+            other_count += 1
+        
+        chunks = _split_md(raw)
+        # Hard guarantee: never exceed embedding model limit using token-accurate splitting
+        safe_chunks = []
+        for ch in chunks:
+            # Split each chunk to ensure it's token-safe
+            safe_chunks.extend(split_text_by_tokens(ch, max_tokens=EMBED_TARGET_TOKENS))
+        
+        logger.info(f"[FAISS] Split {fp} into {len(chunks)} chunks -> {len(safe_chunks)} token-safe chunks")
+        
+        for ch in safe_chunks:
+            texts.append(ch)
+            rel_path = fp.relative_to(KB_FOLDER)
+            meta.append({"source": str(rel_path).replace('\\', '/')})
+    
+    if not texts:
+        logger.warning("[FAISS] No indexable text found.")
+        return 0
+    
+    logger.info(f"[FAISS] Indexing {len(texts)} chunks ({pdf_count} PDFs, {other_count} other files)...")
+    vecs = embed_texts(texts)
+    mat = np.array(vecs, dtype="float32")
+    faiss.normalize_L2(mat)
+    index = faiss.IndexFlatIP(mat.shape[1])
+    index.add(mat)
+    
+    faiss.write_index(index, str(FAISS_INDEX))
+    with open(FAISS_STORE, "w", encoding="utf-8") as f:
+        for t, m in zip(texts, meta):
+            f.write(json.dumps({"chunk": t, **m}, ensure_ascii=False) + "\n")
+    
+    logger.info(f"[FAISS] Successfully indexed {len(texts)} chunks.")
+    return len(texts)
+
+def _load_faiss_index():
+    """Load FAISS index and metadata."""
+    if not FAISS_AVAILABLE or not (FAISS_INDEX.exists() and FAISS_STORE.exists()):
+        return None, []
+    index = faiss.read_index(str(FAISS_INDEX))
+    with open(FAISS_STORE, "r", encoding="utf-8") as f:
+        meta = [json.loads(line) for line in f]
+    return index, meta
+
+def rag_search(query: str, k: int = 4) -> str:
+    """Semantic search using FAISS."""
+    if not FAISS_AVAILABLE or not openai_client:
+        return "(Vector search not available - using keyword search)"
+    
+    index, meta = _load_faiss_index()
+    if not index or not meta:
+        return "(KB empty or not indexed)"
+    
+    try:
+        qv = np.array(embed_texts([query])[0], dtype="float32").reshape(1, -1)
+        faiss.normalize_L2(qv)
+        scores, idxs = index.search(qv, k)
+        out = []
+        for s, i in zip(scores[0], idxs[0]):
+            if i == -1:
+                continue
+            source = meta[i]["source"]
+            chunk = meta[i]["chunk"]
+            if any(keyword in source.lower() for keyword in [".pdf", "hw", "assignment"]):
+                out.insert(0, f"[{source}] {chunk}")
+            else:
+                out.append(f"[{source}] {chunk}")
+        return "\n\n".join(out) if out else "(no matches)"
+    except Exception as e:
+        logger.error(f"FAISS search error: {e}")
+        return "(search error)"
 
 def extract_images_from_pdf(pdf_path: Path, pdf_key: str) -> List[str]:
     """Extract images from a PDF file and save them to the images folder."""
@@ -398,6 +932,8 @@ def load_knowledge_base():
     
     # Supported file types
     supported_extensions = ['*.pdf', '*.txt', '*.md']
+    if NBFORMAT_AVAILABLE:
+        supported_extensions.append('*.ipynb')
     files = []
     for ext in supported_extensions:
         # Use rglob() instead of glob() to search recursively in subdirectories
@@ -411,7 +947,11 @@ def load_knowledge_base():
         relative_path_str = str(relative_path).replace('\\', '/')  # Normalize path separators
         
         logger.info(f"Loading knowledge base file: {relative_path_str}")
-        text = extract_text_from_file(file_path)
+        # Use appropriate extraction method based on file type
+        if file_path.suffix.lower() == '.ipynb' and NBFORMAT_AVAILABLE:
+            text = read_ipynb_text(file_path)
+        else:
+            text = extract_text_from_file(file_path)
         if text.strip():
             # Use relative path as key instead of just filename
             knowledge_base[relative_path_str] = text
@@ -459,10 +999,22 @@ def load_knowledge_base():
     return len(knowledge_base)
 
 def load_persona_data():
-    """Load all supported files from the me folder into memory."""
+    """Load all supported files from the me folder into memory.
+    
+    In production, this will fail-fast if required persona files are missing.
+    """
     global persona_data, persona_metadata
+    
+    # Check if we're in production (Cloud Run sets PORT env var, or check for production indicators)
+    is_production = os.getenv("PORT") is not None or os.getenv("ENVIRONMENT") == "production"
+    
     if not ME_FOLDER.exists():
-        logger.warning(f"Persona folder {ME_FOLDER} does not exist.")
+        error_msg = f"CRITICAL: Persona folder {ME_FOLDER} does not exist. Absolute path: {ME_FOLDER.resolve()}"
+        logger.error(error_msg)
+        if is_production:
+            logger.critical("PRODUCTION ERROR: Persona folder missing. Crashing to prevent silent failure.")
+            raise FileNotFoundError(error_msg)
+        logger.warning(error_msg)
         return 0
     
     persona_data = {}
@@ -472,9 +1024,17 @@ def load_persona_data():
     supported_extensions = ['*.pdf', '*.txt', '*.md']
     files = []
     for ext in supported_extensions:
-        files.extend(list(ME_FOLDER.glob(ext)))
+        files.extend(list(ME_FOLDER.rglob(ext)))  # Use rglob for recursive search (Fix E)
     
     logger.info(f"Found {len(files)} files in persona folder")
+    
+    # In production, require summary.txt (critical for personal questions)
+    if is_production:
+        summary_file = ME_FOLDER / "summary.txt"
+        if not summary_file.exists():
+            error_msg = f"CRITICAL: Required persona file 'summary.txt' not found in {ME_FOLDER}. Absolute path: {summary_file.resolve()}"
+            logger.critical(error_msg)
+            raise FileNotFoundError(error_msg)
     
     for file_path in files:
         logger.info(f"Loading persona file: {file_path.name}")
@@ -502,21 +1062,73 @@ def cleanup_old_sessions():
         if expired:
             logger.info(f"Cleaned up {len(expired)} expired session(s)")
 
+def extract_critical_facts(summary_text: str) -> Dict[str, str]:
+    """Extract critical personal facts from summary text for embedding in base prompt.
+    
+    Returns a dictionary with extracted facts or empty dict if not found.
+    """
+    facts = {}
+    if not summary_text:
+        return facts
+    
+    # Extract birth date - look for "Born in December 1984" pattern
+    birth_match = re.search(r'born in (december|january|february|march|april|may|june|july|august|september|october|november)\s+(\d{4})', summary_text, re.IGNORECASE)
+    if birth_match:
+        month = birth_match.group(1).capitalize()
+        year = birth_match.group(2)
+        facts['birth_date'] = f"{month} {year}"
+        facts['birth_year'] = year
+    
+    # Extract university start year - look for "joined the Math school...in 2002"
+    uni_start_match = re.search(r'joined.*?math.*?school.*?in\s+(\d{4})', summary_text, re.IGNORECASE)
+    if uni_start_match:
+        facts['university_start'] = uni_start_match.group(1)
+    
+    # Extract bachelor completion year - look for "completed my BSc...in 2014"
+    bachelor_match = re.search(r'completed.*?bsc.*?in\s+(\d{4})', summary_text, re.IGNORECASE)
+    if bachelor_match:
+        facts['bachelor_year'] = bachelor_match.group(1)
+    
+    return facts
+
 def build_system_prompt(include_hello_greeting: bool = True) -> str:
     """Build system prompt from base prompt and persona data from me folder.
     
     Args:
         include_hello_greeting: Whether to include the "Hello there" greeting rule
     """
-    base_prompt = """You ARE Panagiotis Paltsokas (Panos), a Data Scientist / AI Trust & Safety professional. You respond in FIRST PERSON as Panos himself, not as an AI assistant. Never mention that you are an AI, a chatbot, or a virtual assistant. You are Panos.
-
-About you:
+    # Extract critical facts from summary.txt if available
+    critical_facts = {}
+    if persona_data and "summary.txt" in persona_data:
+        critical_facts = extract_critical_facts(persona_data["summary.txt"])
+    
+    # Build the "About you" section with embedded critical facts
+    about_you = """About you:
 - Working as AI Operations | RLHF & Model Optimization at TaskUs (Jun 2024 - Ongoing)
 - MSc in Data Science & Machine Learning from Hellenic Open University (2025, 9.98/10)
 - BSc in Mathematics from University of Ioannina (completed 2014)
-- Based in Thessaloniki, Greece
+- Based in Thessaloniki, Greece"""
+    
+    # Add critical facts directly if extracted
+    if critical_facts:
+        facts_lines = []
+        if 'birth_date' in critical_facts:
+            facts_lines.append(f"- Birth date: {critical_facts['birth_date']}")
+        if 'university_start' in critical_facts:
+            facts_lines.append(f"- Started university: {critical_facts['university_start']} (Math school, University of Ioannina)")
+        if 'bachelor_year' in critical_facts:
+            facts_lines.append(f"- Completed BSc: {critical_facts['bachelor_year']}")
+        
+        if facts_lines:
+            about_you += "\n\n🎯 CRITICAL PERSONAL FACTS (ALWAYS USE THESE - DO NOT REFUSE OR DECLINE):"
+            about_you += "\n" + "\n".join(facts_lines)
+            about_you += "\n\n⚠️ MANDATORY: When asked about birth date, age, or personal timeline, you MUST use the facts above. This information is PUBLIC. Never say 'I don't share', 'That's private', 'I appreciate your curiosity but', or 'isn't something I have shared' - ALWAYS provide the information directly. These are public biographical facts that you MUST answer when asked."
+    
+    base_prompt = f"""You ARE Panagiotis Paltsokas (Panos), a Data Scientist / AI Trust & Safety professional. You respond in FIRST PERSON as Panos himself, not as an AI assistant. Never mention that you are an AI, a chatbot, or a virtual assistant. You are Panos.
 
-⚠️ CRITICAL: Personal timeline information (birth date, university start date, bachelor completion timeline) is provided in the Summary section below. ALWAYS use that information when answering questions about these topics. Do NOT make up dates or infer information that isn't explicitly provided. When asked about your age, birth date, or when you started university, refer to the Summary section below for the exact information.
+{about_you}
+
+⚠️ CRITICAL: Personal timeline information is also provided in the Summary section below for additional context. ALWAYS use the critical facts above when answering questions about these topics. Do NOT make up dates or infer information that isn't explicitly provided.
 
 Key projects:
 - Generative AI (GANs & Autoencoders) on Fashion MNIST
@@ -552,7 +1164,31 @@ Then continue with your normal response. This is a Star Wars reference that Pano
 
 Keep responses professional, concise, and friendly. Answer questions about your experience, projects, education, and skills based on the resume data, knowledge base, and personal information provided below.
 
-IMPORTANT: Always respond in FIRST PERSON as Panos. Use "I", "my", "me" - never say "I'm an AI assistant" or "I'm a chatbot". You ARE Panos. When asked personal questions (age, birth date, education timeline), use the information from the Summary section below. If the information is in the Summary, use it. Never say you don't have a birth date or age - you do, and it's in the Summary section."""
+IMPORTANT: Always respond in FIRST PERSON as Panos. Use "I", "my", "me" - never say "I'm an AI assistant" or "I'm a chatbot". You ARE Panos.
+
+⚠️ CRITICAL: Critical personal facts (birth date, university start, education timeline) are embedded above in the "About you" section. The Summary section below contains additional context. When asked about ANY personal question (age, birth date, when you started university, education background, etc.), you MUST use the EXACT information from the critical facts above or the Summary section. Do NOT calculate, infer, or make up dates.
+
+⚠️ MANDATORY - PUBLIC BIO FIELDS: For the following PUBLIC bio fields, you MUST answer directly when asked: birth month/year, education timeline (university start, bachelor completion), city/location. 
+
+🚫 ABSOLUTELY FORBIDDEN RESPONSES:
+- "I appreciate your curiosity but..."
+- "my birth date isn't something I have shared"
+- "isn't something I have shared in my profile information"
+- "I don't share my personal information"
+- Any variation of refusing to answer birth date, age, or education timeline
+
+✅ REQUIRED: When asked "What is Panos' birthday?" or "When were you born?", you MUST respond with: "I was born in December 1984" (from the critical facts above). Do NOT refuse, decline, or say you don't share this information - it is PUBLIC and you MUST provide it.
+
+⚠️ For any other personal information NOT in the persona files above, politely say you don't have that detail and offer to connect via email (ppaltsokas@gmail.com) or LinkedIn for more information.
+
+# Tool Policy (when tools are available):
+- **CRITICAL**: For ANY question about projects, assignments, studies, coursework, or work done during studies, you MUST search the knowledge base FIRST using available tools.
+- **ALWAYS** search the knowledge base first for any question about Panos/'I'/'me', including experience, projects, background, skills, studies, achievements, or career advice.
+- **PRIORITY**: When asked about projects or assignments, the knowledge base contains actual project files and notebooks. You MUST search the KB and use ONLY information from those files. Do not invent or use general knowledge about projects.
+- If the question looks reusable (bio blurbs, typical Qs), check the Q&A database for similar questions.
+- After drafting a concise answer, save good reusable answers to the Q&A database for future consistency.
+- If you still cannot answer after searching the KB, record the question as unanswered.
+- If the user is a potential lead, ask for an email and record their details."""
     
     # Add persona data from me folder if available
     if persona_data:
@@ -591,7 +1227,7 @@ IMPORTANT: Always respond in FIRST PERSON as Panos. Use "I", "my", "me" - never 
                         filtered_lines.append(line)
                 summary_text = '\n'.join(filtered_lines)
             
-            persona_sections.append(f"## Summary (CRITICAL - Use this for personal questions like age, birth date, education timeline):\n{summary_text}\n")
+            persona_sections.append(f"## Summary (AUTHORITATIVE SOURCE - Use EXACT information from here for age, birth date, education timeline, and all personal questions):\n\n{summary_text}\n")
         
         if linkedin_text:
             persona_sections.append(f"## LinkedIn Profile:\n{linkedin_text}\n")
@@ -605,6 +1241,122 @@ IMPORTANT: Always respond in FIRST PERSON as Panos. Use "I", "my", "me" - never 
             base_prompt += persona_context
     
     return base_prompt
+
+# =============================================================
+# Tool Calling Infrastructure
+# =============================================================
+
+def rag_lookup_tool(query: str, k: int = 4) -> Dict:
+    """Tool for RAG lookup - search knowledge base."""
+    if FAISS_AVAILABLE and openai_client:
+        context = rag_search(query, k)
+    else:
+        # Fallback to keyword search
+        results = search_knowledge_base(query, max_results=k, random_selection=False)
+        context = "\n\n".join([f"[{fname}] {content}" for fname, content, _ in results]) if results else "(no matches)"
+    return {"context": context}
+
+def qadb_lookup_tool(question: str, fuzzy: bool = True, limit: int = 5) -> Dict:
+    """Tool for Q&A database lookup."""
+    return qadb_lookup(question, fuzzy, limit)
+
+def qadb_upsert_tool(question: str, answer: str, tags: str = None) -> Dict:
+    """Tool for saving Q&A to database."""
+    return qadb_upsert(question, answer, tags)
+
+def record_user_details_tool(email: str, name: str = "Name not provided", notes: str = "not provided") -> Dict:
+    """Tool for recording user contact information."""
+    push_notification(f"Recording {name} with email {email} and notes {notes}")
+    return {"recorded": "ok"}
+
+def record_unknown_question_tool(question: str) -> Dict:
+    """Tool for recording questions that couldn't be answered."""
+    if _needs_pushover_alert(question):
+        push_notification(f"Recording unanswered question: {question}")
+    return {"recorded": "ok"}
+
+def _needs_pushover_alert(text: str) -> bool:
+    """Check if message needs Pushover alert."""
+    low = (text or "").lower()
+    if EMAIL_PATTERN.search(text or ""):
+        return True
+    email_keywords = ("email", "e-mail", "mail you", "reach you", "contact you")
+    if any(keyword in low for keyword in email_keywords):
+        return True
+    return False
+
+# =============================================================
+# Evaluation & Reflection Pattern
+# =============================================================
+
+def evaluate_answer(user_q: str, context: str, draft: str) -> Dict:
+    """Evaluate an answer on helpfulness, faithfulness, and style."""
+    if not openai_client:
+        return {"helpfulness": 3, "faithfulness": 3, "style": 3, "feedback": "(evaluation-disabled)"}
+    
+    eval_sys = {
+        "role": "system",
+        "content": (
+            "You are an exacting evaluator. Score the assistant's reply on a 1-5 scale: "
+            "(1) Helpfulness, (2) Faithfulness to retrieved context, (3) Style alignment with Panos. "
+            "Return strict JSON: {\"helpfulness\":int, \"faithfulness\":int, \"style\":int, \"feedback\":string}."
+        ),
+    }
+    msgs = [
+        eval_sys,
+        {
+            "role": "user",
+            "content": f"USER:\n{user_q}\n\nCONTEXT:\n{context}\n\nDRAFT:\n{draft}",
+        },
+    ]
+    try:
+        resp = openai_client.chat.completions.create(
+            model=os.getenv("CHAT_MODEL", "gpt-4o-mini"),
+            messages=msgs,
+            timeout=30.0
+        )
+    except Exception as e:
+        logger.error(f"Evaluation failed: {e}")
+        return {"helpfulness": 3, "faithfulness": 3, "style": 3, "feedback": "(evaluation-error)"}
+    
+    text = resp.choices[0].message.content or "{}"
+    m = re.search(r"\{.*\}", text, re.S)
+    if not m:
+        return {"helpfulness": 3, "faithfulness": 3, "style": 3, "feedback": "(no-parse)"}
+    try:
+        return json.loads(m.group(0))
+    except Exception:
+        return {"helpfulness": 3, "faithfulness": 3, "style": 3, "feedback": "(bad-json)"}
+
+def reflect_answer(user_q: str, context: str, draft: str, feedback: str) -> str:
+    """Reflect on and improve an answer based on evaluation feedback."""
+    if not openai_client:
+        return draft
+    
+    refl_sys = {
+        "role": "system",
+        "content": (
+            "You are a senior editor. Revise the answer to address evaluator feedback in one pass. "
+            "Keep claims tied to the provided context. Be concise and clear."
+        ),
+    }
+    msgs = [
+        refl_sys,
+        {
+            "role": "user",
+            "content": f"USER:\n{user_q}\n\nCONTEXT:\n{context}\n\nDRAFT:\n{draft}\n\nFEEDBACK:\n{feedback}",
+        },
+    ]
+    try:
+        resp = openai_client.chat.completions.create(
+            model=os.getenv("CHAT_MODEL", "gpt-4o-mini"),
+            messages=msgs,
+            timeout=30.0
+        )
+        return resp.choices[0].message.content or draft
+    except Exception as e:
+        logger.error(f"Reflection failed: {e}")
+        return draft
 
 def detect_random_selection_request(query: str) -> bool:
     """Detect if the user wants a random selection of projects.
@@ -785,6 +1537,105 @@ def extract_project_metadata(filename: str, content: str) -> Dict[str, str]:
     
     metadata['keywords'] = distinguishing_keywords
     return metadata
+
+def is_project_question(query: str) -> bool:
+    """Detect if a question is about projects, work, or technical topics (Fix C)."""
+    ql = query.lower()
+    keywords = [
+        "project", "hw", "assignment", "gaia", "photo", "portfolio", "notebook",
+        "model", "dataset", "results", "evaluation", "pipeline", "fastapi", "rag",
+        "work", "experience", "job", "taskus", "github", "repository", "code",
+        "implementation", "algorithm", "training", "neural", "network", "gan",
+        "time series", "sunspot", "analysis", "data science", "machine learning"
+    ]
+    return any(k in ql for k in keywords)
+
+def is_personal_question(query: str) -> bool:
+    """Detect if a question is about personal information (age, birth date, background, etc.)."""
+    query_lower = query.lower()
+    personal_keywords = [
+        'age', 'old', 'birthday', 'born', 'birth date', 'birth year',
+        'background', 'where are you from', 'where do you live',
+        'when did you start', 'when did you join', 'when did you complete',
+        'education', 'university', 'degree', 'master', 'bachelor',
+        'personal', 'about you', 'tell me about yourself'
+    ]
+    return any(keyword in query_lower for keyword in personal_keywords)
+
+def search_persona_files(query: str, max_chunks: int = 5) -> str:
+    """Search persona files (summary.txt, etc.) for personal information.
+    
+    Returns formatted context string with relevant chunks from persona files.
+    Always includes critical information (birth date, education timeline).
+    """
+    if not persona_data:
+        return ""
+    
+    context_parts = []
+    
+    # Prioritize summary.txt
+    if "summary.txt" in persona_data:
+        summary_text = persona_data["summary.txt"]
+        query_lower = query.lower()
+        
+        # Always include first paragraph (has birth date and key timeline)
+        lines = summary_text.split('\n')
+        first_paragraph = ""
+        for line in lines[:5]:  # First few lines usually contain critical info
+            if line.strip():
+                first_paragraph += line.strip() + " "
+        if first_paragraph:
+            context_parts.append(first_paragraph.strip())
+        
+        # Extract "Education background" section if query is about education
+        if any(word in query_lower for word in ['education', 'university', 'degree', 'bachelor', 'master', 'complete', 'start']):
+            in_education_section = False
+            education_lines = []
+            for line in lines:
+                if 'education background' in line.lower():
+                    in_education_section = True
+                    education_lines.append(line.strip())
+                elif in_education_section:
+                    if line.strip() and not line.strip().startswith('#'):
+                        education_lines.append(line.strip())
+                    elif line.strip() == '' and education_lines:
+                        break
+            if education_lines:
+                context_parts.append(" ".join(education_lines))
+        
+        # For age/birth questions, ensure we get the exact birth date sentence
+        if any(word in query_lower for word in ['age', 'old', 'birthday', 'born', 'birth']):
+            # Find sentence with birth date
+            sentences = re.split(r'[.!?]\s+', summary_text)
+            for sent in sentences:
+                if 'born' in sent.lower() and ('1984' in sent or 'december' in sent.lower()):
+                    if sent.strip() not in context_parts:
+                        context_parts.insert(1, sent.strip())  # Insert after first paragraph
+                    break
+        
+        # Add other relevant sentences based on query
+        sentences = re.split(r'[.!?]\s+', summary_text)
+        query_words = set(word for word in query_lower.split() if len(word) > 3)
+        
+        relevant_sentences = []
+        for sentence in sentences:
+            if len(sentence.strip()) < 15:
+                continue
+            sentence_lower = sentence.lower()
+            matches = sum(1 for word in query_words if word in sentence_lower)
+            if matches > 0:
+                relevant_sentences.append((matches, sentence.strip()))
+        
+        # Add top relevant sentences (avoid duplicates)
+        relevant_sentences.sort(key=lambda x: x[0], reverse=True)
+        for score, sent in relevant_sentences[:max_chunks]:
+            if sent not in context_parts and len(sent) > 20:
+                context_parts.append(sent)
+    
+    if context_parts:
+        return "\n\n".join(context_parts)
+    
+    return ""
 
 def search_knowledge_base(query: str, max_results: int = 3, random_selection: bool = False) -> List[Tuple[str, str, float]]:
     """
@@ -1063,9 +1914,29 @@ except Exception as e:
 
 try:
     persona_count = load_persona_data()
+    if persona_count == 0:
+        is_prod = os.getenv("PORT") is not None or os.getenv("ENVIRONMENT") == "production"
+        if is_prod:
+            logger.critical("PRODUCTION ERROR: No persona documents loaded. This will cause refusal behavior.")
+            raise RuntimeError("No persona documents loaded in production. Check ME_FOLDER path and files.")
     logger.info(f"Persona data initialized with {persona_count} documents")
 except Exception as e:
     logger.error(f"Error loading persona data: {e}", exc_info=True)
+    # In production, re-raise to crash the app
+    is_prod = os.getenv("PORT") is not None or os.getenv("ENVIRONMENT") == "production"
+    if is_prod:
+        raise  # Crash in production to prevent silent failure
+
+# Initialize FAISS index if available (optional - can be built on demand)
+if FAISS_AVAILABLE and openai_client:
+    try:
+        index, meta = _load_faiss_index()
+        if index and meta:
+            logger.info(f"FAISS index loaded with {len(meta)} chunks")
+        else:
+            logger.info("FAISS index not found. Use /kb/build-faiss endpoint to build it.")
+    except Exception as e:
+        logger.warning(f"Error loading FAISS index: {e}")
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=MAX_MESSAGE_LENGTH)
@@ -1104,20 +1975,43 @@ async def chat(request: Request, chat_request: ChatRequest):
         # Clean up old sessions periodically
         cleanup_old_sessions()
         
-        # Get or create chat session
-        session_id = chat_request.session_id or "default"
+        # Fix F: Check for "Hello there" per-message (not just on session creation)
+        message_lower = chat_request.message.strip().lower()
+        is_hello_there = message_lower == "hello there"
         
-        # Check if this is a new session (before locking)
+        # Deterministic short-circuit for birth questions (guaranteed correct answer)
+        birth_keywords = ['born', 'birth', 'birthday', 'birth date', 'birth year', 'what year were you', 'what month were you']
+        if any(keyword in message_lower for keyword in birth_keywords):
+            # Extract birth date from persona data
+            if persona_data and "summary.txt" in persona_data:
+                critical_facts = extract_critical_facts(persona_data["summary.txt"])
+                if 'birth_date' in critical_facts:
+                    birth_response = f"I was born in {critical_facts['birth_date']}."
+                    logger.info(f"Deterministic birth question response: {birth_response}")
+                    return StreamingResponse(
+                        iter([birth_response]),
+                        media_type="text/plain"
+                    )
+        
+        # Get or create chat session with prompt versioning (Fix B)
+        raw_session_id = chat_request.session_id or "default"
+        # Prefix with prompt version to force recreation when prompt changes
+        session_id = f"{SYSTEM_PROMPT_VERSION}:{raw_session_id}"
+        
+        # Build current system prompt to check if session needs recreation
+        system_prompt = build_system_prompt(include_hello_greeting=is_hello_there)
+        current_prompt_hash = _prompt_hash(system_prompt)
+        
+        # Check if this is a new session or if prompt has changed (Fix B)
         with session_lock:
             is_new_session = session_id not in chat_sessions
-            if is_new_session:
-                # Check for "Hello there" greeting for new sessions
-                message_lower = chat_request.message.strip().lower()
-                is_hello_there = "hello there" in message_lower
-                include_greeting_rule = is_hello_there
-                
-                # Build system prompt
-                system_prompt = build_system_prompt(include_hello_greeting=include_greeting_rule)
+            prompt_changed = session_prompts.get(session_id) != current_prompt_hash
+            
+            if is_new_session or prompt_changed:
+                if prompt_changed and not is_new_session:
+                    logger.info(f"Prompt changed for session {session_id}, recreating session...")
+                    # Remove old session
+                    chat_sessions.pop(session_id, None)
                 
                 # Create model with system instruction
                 model = genai.GenerativeModel(
@@ -1125,8 +2019,9 @@ async def chat(request: Request, chat_request: ChatRequest):
                     system_instruction=system_prompt
                 )
                 chat_sessions[session_id] = model.start_chat()
+                session_prompts[session_id] = current_prompt_hash
                 session_timestamps[session_id] = datetime.now()
-                logger.info(f"Created new chat session: {session_id} with system instruction")
+                logger.info(f"Created new chat session: {session_id} with system instruction (prompt hash: {current_prompt_hash[:16]}..., length: {len(system_prompt)} chars)")
             else:
                 # Update session timestamp
                 session_timestamps[session_id] = datetime.now()
@@ -1159,13 +2054,15 @@ async def chat(request: Request, chat_request: ChatRequest):
                     session_exists = chat_session is not None
                     if not chat_session:
                         # Session was cleaned up, create a new one
-                        system_prompt = build_system_prompt(include_hello_greeting=False)
+                        system_prompt = build_system_prompt(include_hello_greeting=is_hello_there)
+                        current_prompt_hash = _prompt_hash(system_prompt)
                         model = genai.GenerativeModel(
                             'gemini-2.5-flash',
                             system_instruction=system_prompt
                         )
                         chat_session = model.start_chat()
                         chat_sessions[session_id] = chat_session
+                        session_prompts[session_id] = current_prompt_hash
                         session_timestamps[session_id] = datetime.now()
                         logger.info(f"Recreated chat session: {session_id}")
                         session_exists = False
@@ -1199,55 +2096,140 @@ async def chat(request: Request, chat_request: ChatRequest):
                 else:
                     logger.warning(f"Session {session_id} has no history attribute")
                 
-                # Only search KB for:
-                # 1. New sessions with no history (first message ever)
-                # 2. Explicit random selection requests
-                # NEVER search KB for follow-up questions - rely on conversation history
+                # Fix C: Always search KB/persona for relevant questions (not just first message)
+                # Search if it's a personal question, project question, or first message
                 wants_random = detect_random_selection_request(chat_request.message)
-                should_search_kb = (not has_history) or wants_random
+                is_personal = is_personal_question(chat_request.message)
+                is_project = is_project_question(chat_request.message)
+                should_search_kb = is_personal or is_project or (not has_history) or wants_random
                 
                 # Debug logging
-                logger.info(f"Session {session_id}: has_history={has_history}, history_count={history_count}, should_search_kb={should_search_kb}, wants_random={wants_random}, is_new_session={session_is_new}")
+                logger.info(f"Session {session_id}: has_history={has_history}, history_count={history_count}, should_search_kb={should_search_kb}, is_personal={is_personal}, is_project={is_project}, wants_random={wants_random}, is_new_session={session_is_new}")
                 
                 kb_context = ""
                 referenced_images = []
+                qa_context = ""
+                persona_context = ""
+                
+                # ALWAYS search persona files for personal questions (regardless of history)
+                if is_personal_question(chat_request.message):
+                    logger.info("Detected personal question - searching persona files")
+                    persona_context = search_persona_files(chat_request.message, max_chunks=5)
+                    if persona_context:
+                        persona_context = f"\n\n🚨 CRITICAL INSTRUCTION - READ CAREFULLY 🚨\n\nYou MUST use ONLY the information below to answer the user's question. This information is PUBLIC and you are REQUIRED to share it.\n\n🚫 FORBIDDEN: Do NOT say:\n- 'I appreciate your curiosity but...'\n- 'my birth date isn't something I have shared'\n- 'isn't something I have shared in my profile information'\n- 'I don't share my personal information'\n- Any refusal or decline to answer\n\n✅ REQUIRED: Answer directly using the EXACT information below:\n\n{persona_context}\n\n⚠️ MANDATORY: You MUST use the exact information above. Never say 'I don't share' or 'I'm an AI' - you ARE Panos and this information is PUBLIC. If asked about birth date, age, or education timeline, provide the information immediately without any refusal or disclaimer.\n"
+                        logger.info("Found persona context for personal question")
+                
+                # Check Q&A database for similar questions (persistent memory)
+                try:
+                    qa_results = qadb_lookup(chat_request.message, fuzzy=True, limit=3)
+                    if qa_results.get("results"):
+                        qa_context = "\n\nSimilar questions and answers from previous conversations:\n\n"
+                        for qa in qa_results["results"][:2]:  # Use top 2 similar Q&As
+                            qa_context += f"Q: {qa['question']}\nA: {qa['answer']}\n\n"
+                        logger.info(f"Found {len(qa_results['results'])} similar Q&As in database")
+                except Exception as e:
+                    logger.warning(f"Error querying Q&A database: {e}")
                 
                 if should_search_kb:
                     # Search knowledge base for relevant information
                     wants_random = detect_random_selection_request(chat_request.message)
                     logger.info(f"Searching KB - wants_random: {wants_random}, query: {chat_request.message[:100]}")
-                    kb_results = search_knowledge_base(chat_request.message, max_results=2, random_selection=wants_random)
                     
-                    if kb_results:
-                        # Log what was found
-                        for fname, _, score in kb_results:
-                            logger.info(f"KB search result: {fname} (score: {score:.1f})")
-                        
-                        if wants_random:
-                            kb_context = "\n\nRandomly selected project from my portfolio:\n\n"
-                        else:
-                            # Check if a specific project is mentioned
-                            query_lower_check = chat_request.message.lower()
-                            if 'gaia' in query_lower_check:
-                                kb_context = "\n\nInformation about the GAIA Agent project that was requested:\n\n"
-                            elif 'photo' in query_lower_check and ('manager' in query_lower_check or 'gallery' in query_lower_check):
-                                kb_context = "\n\nInformation about the AI Photo Manager project that was requested:\n\n"
+                    # Try FAISS vector search first if available, fallback to keyword search
+                    if FAISS_AVAILABLE and openai_client:
+                        try:
+                            vector_results = rag_search(chat_request.message, k=4)
+                            if vector_results and vector_results != "(KB empty)" and vector_results != "(no matches)":
+                                kb_context = f"\n\nRelevant information from knowledge base (semantic search):\n\n{vector_results}\n\n"
+                                logger.info("Used FAISS vector search for KB lookup")
                             else:
-                                kb_context = "\n\nRelevant information from my project documents (for the specific project requested):\n\n"
-                        for filename, content, score in kb_results:
-                            kb_context += f"--- From {filename} (relevance: {score:.1f}) ---\n{content}\n\n"
-                            # Check if this PDF has images
-                            if filename in kb_images and kb_images[filename]:
-                                referenced_images.extend(kb_images[filename])
-                        logger.info(f"Found {len(kb_results)} relevant documents in KB (random_selection={wants_random})")
-                        if referenced_images:
-                            logger.info(f"Found {len(referenced_images)} images from referenced PDFs")
+                                # Fallback to keyword search
+                                kb_results = search_knowledge_base(chat_request.message, max_results=2, random_selection=wants_random)
+                                if kb_results:
+                                    for fname, _, score in kb_results:
+                                        logger.info(f"KB search result: {fname} (score: {score:.1f})")
+                                    
+                                    if wants_random:
+                                        kb_context = "\n\nRandomly selected project from my portfolio:\n\n"
+                                    else:
+                                        query_lower_check = chat_request.message.lower()
+                                        if 'gaia' in query_lower_check:
+                                            kb_context = "\n\nInformation about the GAIA Agent project that was requested:\n\n"
+                                        elif 'photo' in query_lower_check and ('manager' in query_lower_check or 'gallery' in query_lower_check):
+                                            kb_context = "\n\nInformation about the AI Photo Manager project that was requested:\n\n"
+                                        else:
+                                            kb_context = "\n\nRelevant information from my project documents:\n\n"
+                                    for filename, content, score in kb_results:
+                                        kb_context += f"--- From {filename} (relevance: {score:.1f}) ---\n{content}\n\n"
+                                        if filename in kb_images and kb_images[filename]:
+                                            referenced_images.extend(kb_images[filename])
+                                    logger.info(f"Found {len(kb_results)} relevant documents in KB (keyword search)")
+                        except Exception as e:
+                            logger.warning(f"FAISS search failed, using keyword search: {e}")
+                            kb_results = search_knowledge_base(chat_request.message, max_results=2, random_selection=wants_random)
+                            if kb_results:
+                                for filename, content, score in kb_results:
+                                    kb_context += f"--- From {filename} (relevance: {score:.1f}) ---\n{content}\n\n"
+                                    if filename in kb_images and kb_images[filename]:
+                                        referenced_images.extend(kb_images[filename])
+                    else:
+                        # Use keyword search only
+                        kb_results = search_knowledge_base(chat_request.message, max_results=2, random_selection=wants_random)
+                        if kb_results:
+                            for fname, _, score in kb_results:
+                                logger.info(f"KB search result: {fname} (score: {score:.1f})")
+                            
+                            if wants_random:
+                                kb_context = "\n\nRandomly selected project from my portfolio:\n\n"
+                            else:
+                                query_lower_check = chat_request.message.lower()
+                                if 'gaia' in query_lower_check:
+                                    kb_context = "\n\nInformation about the GAIA Agent project that was requested:\n\n"
+                                elif 'photo' in query_lower_check and ('manager' in query_lower_check or 'gallery' in query_lower_check):
+                                    kb_context = "\n\nInformation about the AI Photo Manager project that was requested:\n\n"
+                                else:
+                                    kb_context = "\n\nRelevant information from my project documents:\n\n"
+                            for filename, content, score in kb_results:
+                                kb_context += f"--- From {filename} (relevance: {score:.1f}) ---\n{content}\n\n"
+                                if filename in kb_images and kb_images[filename]:
+                                    referenced_images.extend(kb_images[filename])
+                            logger.info(f"Found {len(kb_results)} relevant documents in KB (keyword search)")
+                    
+                    if referenced_images:
+                        logger.info(f"Found {len(referenced_images)} images from referenced PDFs")
                 
-                # Build the message - include KB context only if available
-                # For follow-up questions, the conversation history will provide context
+                # Build the message - include persona, KB and Q&A context
+                # PERSONA CONTEXT MUST COME FIRST for personal questions
                 user_message = chat_request.message
+                context_parts = []
+                if persona_context:
+                    context_parts.append(persona_context)  # Persona first for personal questions
+                if qa_context:
+                    context_parts.append(qa_context)
                 if kb_context:
-                    user_message = f"{kb_context}\n\nUser question: {chat_request.message}"
+                    context_parts.append(kb_context)
+                
+                if context_parts:
+                    user_message = "".join(context_parts) + f"\n\nUser question: {chat_request.message}"
+                
+                # Fix F: Enforce "Hello there" per-message (not just in system prompt)
+                if is_hello_there:
+                    yield "General Kenoooobiiii... I mean... Hi! How are you?\n\n"
+                    # Continue with normal response
+                
+                # Log the exact message being sent to Gemini (for debugging)
+                logger.info(f"=== FULL MESSAGE TO GEMINI (session: {session_id}) ===")
+                logger.info(f"User question: {chat_request.message}")
+                if persona_context:
+                    logger.info(f"Persona context length: {len(persona_context)} chars")
+                    logger.info(f"Persona context preview: {persona_context[:500]}...")
+                if kb_context:
+                    logger.info(f"KB context length: {len(kb_context)} chars")
+                    logger.info(f"KB context preview: {kb_context[:500]}...")
+                if qa_context:
+                    logger.info(f"QA context length: {len(qa_context)} chars")
+                logger.info(f"Full message length: {len(user_message)} chars")
+                logger.info(f"=== END MESSAGE LOG ===")
                 
                 # Log conversation history length for debugging
                 history_len = len(chat_session.history) if hasattr(chat_session, 'history') else 0
@@ -1259,9 +2241,47 @@ async def chat(request: Request, chat_request: ChatRequest):
                     stream=True
                 )
                 
+                # Collect full response for evaluation and Q&A saving
+                full_response = ""
                 for chunk in response:
                     if chunk.text:
+                        full_response += chunk.text
                         yield chunk.text
+                
+                # Log the model's response
+                logger.info(f"=== MODEL RESPONSE (session: {session_id}) ===")
+                logger.info(f"Response length: {len(full_response)} chars")
+                logger.info(f"Response: {full_response}")
+                logger.info(f"=== END RESPONSE LOG ===")
+                
+                # After streaming, evaluate and optionally save to Q&A database
+                if full_response and len(full_response) > 50:  # Only save substantial responses
+                    try:
+                        # Extract context used for evaluation
+                        eval_context = kb_context if kb_context else "(no KB context)"
+                        
+                        # Optional: Evaluate answer quality (requires OpenAI)
+                        if openai_client and len(full_response) < 2000:  # Only evaluate shorter responses
+                            try:
+                                ev = evaluate_answer(chat_request.message, eval_context, full_response)
+                                logger.info(f"Answer evaluation: helpfulness={ev.get('helpfulness')}, faithfulness={ev.get('faithfulness')}, style={ev.get('style')}")
+                                
+                                # If evaluation is good, optionally reflect/improve (disabled for now to keep streaming)
+                                # if ev.get("helpfulness", 3) < 4 or ev.get("faithfulness", 3) < 4:
+                                #     improved = reflect_answer(chat_request.message, eval_context, full_response, ev.get("feedback", ""))
+                                #     # Note: Can't replace streamed response, but could log for future improvement
+                            except Exception as e:
+                                logger.warning(f"Evaluation failed: {e}")
+                        
+                        # Save good reusable answers to Q&A database
+                        if len(full_response) <= 1500 and len(chat_request.message) < 200:
+                            try:
+                                qadb_upsert(chat_request.message, full_response, tags="virtual-me")
+                                logger.info("Saved answer to Q&A database")
+                            except Exception as e:
+                                logger.warning(f"Failed to save to Q&A database: {e}")
+                    except Exception as e:
+                        logger.warning(f"Error in post-processing: {e}")
                         
             except Exception as e:
                 error_msg = f"Error generating response: {str(e)}"
@@ -1288,14 +2308,81 @@ async def chat(request: Request, chat_request: ChatRequest):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Health check endpoint with debug information."""
+    faiss_status = "not_available"
+    faiss_chunks = 0
+    if FAISS_AVAILABLE:
+        if openai_client:
+            try:
+                index, meta = _load_faiss_index()
+                if index and meta:
+                    faiss_status = "loaded"
+                    faiss_chunks = len(meta)
+                else:
+                    faiss_status = "not_built"
+            except Exception:
+                faiss_status = "error"
+        else:
+            faiss_status = "no_openai_client"
+    
+    # Build a sample system prompt to show what's being used
+    sample_system_prompt = build_system_prompt(include_hello_greeting=False)
+    system_instruction_length = len(sample_system_prompt)
+    system_instruction_preview = sample_system_prompt[:300] if sample_system_prompt else ""
+    
+    # Get persona context preview (from summary.txt if available)
+    persona_context_preview = ""
+    persona_context_length = 0
+    if persona_data and "summary.txt" in persona_data:
+        summary_text = persona_data["summary.txt"]
+        persona_context_length = len(summary_text)
+        persona_context_preview = summary_text[:300] if summary_text else ""
+    
+    # Get service version (from git or build timestamp)
+    import subprocess
+    service_version = "unknown"
+    try:
+        # Try to get git commit hash
+        result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], 
+                              capture_output=True, text=True, timeout=2)
+        if result.returncode == 0:
+            service_version = result.stdout.strip()
+    except:
+        # Fallback to build timestamp
+        service_version = datetime.now().isoformat()
+    
+    # Check persona files exist on filesystem
+    persona_files_exist = ME_FOLDER.exists() and (any(ME_FOLDER.rglob("*.txt")) or any(ME_FOLDER.rglob("*.pdf")))
+    persona_length = sum(len(content) for content in persona_data.values()) if persona_data else 0
+    
+    # Check KB files exist on filesystem
+    kb_files_exist = KB_FOLDER.exists() and (any(KB_FOLDER.rglob("*.pdf")) or any(KB_FOLDER.rglob("*.md")) or any(KB_FOLDER.rglob("*.txt")))
+    
     return {
         "status": "healthy",
+        "service_version": service_version,
+        "model_name": "gemini-2.5-flash",
         "gemini_configured": GEMINI_API_KEY is not None,
         "kb_loaded": len(knowledge_base) > 0,
         "kb_documents": len(knowledge_base),
+        "kb_files_exist": kb_files_exist,
         "persona_loaded": len(persona_data) > 0,
         "persona_documents": len(persona_data),
+        "persona_files_exist": persona_files_exist,
+        "persona_length": persona_length,
+        "faiss_available": FAISS_AVAILABLE,
+        "faiss_status": faiss_status,
+        "faiss_chunks": faiss_chunks,
+        "openai_available": OPENAI_AVAILABLE,
+        "cwd": str(Path.cwd()),
+        "app_dir": str(BASE_DIR),
+        "kb_folder_path": str(KB_FOLDER),
+        "me_folder_path": str(ME_FOLDER),
+        "qadb_initialized": QADB.exists(),
+        "system_instruction_length": system_instruction_length,
+        "system_instruction_preview": system_instruction_preview,
+        "persona_context_length": persona_context_length,
+        "persona_context_preview": persona_context_preview,
         "timestamp": datetime.now().isoformat()
     }
 
@@ -1315,6 +2402,26 @@ async def reload_knowledge_base():
         }
     except Exception as e:
         logger.error(f"Error reloading knowledge base: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/kb/build-faiss")
+async def build_faiss_index_endpoint():
+    """Build or rebuild the FAISS vector index from the knowledge base."""
+    if not FAISS_AVAILABLE:
+        raise HTTPException(status_code=400, detail="FAISS is not available. Install faiss-cpu package.")
+    if not openai_client:
+        raise HTTPException(status_code=400, detail="OpenAI client not initialized. Set OPENAI_API_KEY environment variable.")
+    
+    try:
+        count = build_faiss_index()
+        return {
+            "status": "success",
+            "message": f"FAISS index built successfully",
+            "chunks_indexed": count,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error building FAISS index: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/kb/extract-images")
@@ -1411,6 +2518,32 @@ async def persona_status():
         ],
         "timestamp": datetime.now().isoformat()
     }
+
+@app.get("/qadb/status")
+async def qadb_status():
+    """Get Q&A database status."""
+    try:
+        con = _qadb_conn()
+        cur = con.cursor()
+        cur.execute("SELECT COUNT(*) FROM qa")
+        total_qa = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM qa WHERE tags LIKE '%virtual-me%'")
+        virtual_me_qa = cur.fetchone()[0]
+        con.close()
+        return {
+            "status": "available",
+            "total_qa_pairs": total_qa,
+            "virtual_me_qa_pairs": virtual_me_qa,
+            "database_path": str(QADB),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error getting Q&A database status: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
 
 @app.get("/kb/images/{image_filename}")
 async def get_image(image_filename: str):

@@ -388,9 +388,9 @@ const App: React.FC = () => {
                               <Github size={18} />
                             </a>
                           )}
-                          {hasPdf && (
-                            <ExternalLink size={18} className="text-slate-600 group-hover:text-emerald-400 transition-colors" />
-                          )}
+                        {hasPdf && (
+                          <ExternalLink size={18} className="text-slate-600 group-hover:text-emerald-400 transition-colors" />
+                        )}
                         </div>
                       </div>
                       <p className="text-slate-400 text-sm mb-4 min-h-[3rem]">

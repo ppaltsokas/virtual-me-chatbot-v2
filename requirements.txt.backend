@@ -8,3 +8,8 @@ requests
 Pillow
 google-generativeai
 slowapi
+faiss-cpu==1.8.0.post1
+tiktoken>=0.12.0
+numpy>=1.26.4
+openai>=1.85.0
+nbformat>=5.10.4

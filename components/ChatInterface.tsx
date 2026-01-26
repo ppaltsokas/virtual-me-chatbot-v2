@@ -45,8 +45,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
   const [isLoading, setIsLoading] = useState(false);
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   const [showToasty, setShowToasty] = useState(false);
-  // Generate unique session ID for conversation memory
-  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  // Generate unique session ID for conversation memory - can be regenerated on "New chat"
+  const [sessionId, setSessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -220,6 +220,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
       setShowToasty(false);
     }, 2000);
     
+    // Generate a NEW session ID for the new conversation
+    // This ensures the backend creates a fresh session with the latest system prompt
+    const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setSessionId(newSessionId);
+    
     // Reset messages to just the initial greeting
     setMessages([
       {
@@ -352,7 +357,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ isOpen, onClose, isMobile
           <button 
             onClick={handleClearChat}
             className="p-2 hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-red-400"
-            title="Clear chat"
+            title="New chat (starts fresh conversation with new session)"
             disabled={isLoading}
           >
             <Eraser size={18} />

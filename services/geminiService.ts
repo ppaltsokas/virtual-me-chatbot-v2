@@ -9,6 +9,11 @@ export const createChatSession = (): ChatSession => {
   // Get API URL from env or default to localhost
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   
+  // Log API URL at startup for debugging (only in development)
+  if (import.meta.env.DEV) {
+    console.log(`[ChatService] API_URL: ${API_URL}`);
+  }
+  
   // Check backend health first
   const checkBackendHealth = async (): Promise<boolean> => {
     try {
