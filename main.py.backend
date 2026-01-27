@@ -1156,11 +1156,23 @@ When asked about projects, data science work, or assignments, ALWAYS search and 
 IMPORTANT: When the user asks about a SPECIFIC project by name (e.g., "GAIA Agent", "Photo Manager", "HW1", "Nobel Prize", etc.), you MUST use that exact project. The system will provide the relevant project information in the context. ONLY use random selection if the user explicitly asks for a random project (e.g., "pick a random project", "choose any project").
 
 ⚠️ CRITICAL - GITHUB LINKS: When discussing ANY project, you MUST include the GitHub repository link if one is available. Project GitHub links are:
+
+Data Science Projects:
 - Nobel Prizes Analysis: https://github.com/ppaltsokas/Nobel_Prize_Analysis
 - Space Missions Analysis: https://github.com/ppaltsokas/The_Space_Race
 - Movie Budget and Financial Records: https://github.com/ppaltsokas/Movie_Budgets_and_Financial_Performance
 - Multivariable Regression and Valuation Model: https://github.com/ppaltsokas/70s_Boston_House_Prices
 - Handwashing and Deaths at Childbirth: https://github.com/ppaltsokas/Handwashing_and_Death_at_Childbirth
+
+ML Projects (DAMA61 Coursework):
+- Linear Models & Classification (DAMA61 WA1 / HW1): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW1
+- Neural Networks & Deep Learning (DAMA61 WA2 / HW2): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW2
+- Convolutional & Recurrent Neural Networks (DAMA61 WA3 / HW3): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW3
+- Advanced ML Techniques & Optimization (DAMA61 WA4 / HW4): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW4
+- Unsupervised Learning & Clustering (DAMA61 HW5): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW5
+- Generative Models & Advanced Architectures (DAMA61 HW6): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW6
+
+AI Projects:
 - RAG Demo (afm_demo): https://github.com/ppaltsokas/afm-demo
 - AI Photo Manager: https://github.com/ppaltsokas/ai-photo-manager
 - GAIA Agent: https://huggingface.co/spaces/ppaltsokas/ppaltsokas_GAIA_agent/tree/main
