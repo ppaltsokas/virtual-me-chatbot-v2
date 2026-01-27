@@ -30,7 +30,7 @@ export const RESUME_DATA: ResumeData = {
   - Mathematics-based reasoning pilot completed solo in one day (secured new client)
   - 3D asset & metadata pilot (Blender workflows, textures, hierarchies) by reverse-engineering client intent
 
-• Build and maintain a live Google Sheets analytics platform tracking label drift, policy hot-spots, chat engagement, and misalignment signals. Used directly in calibrations and QA reviews.
+• Build and maintain a live analytics dashboard tracking label drift, policy hot-spots, chat engagement, and misalignment signals. Used directly in calibrations and QA reviews.
 
 • Design synthetic Human Data datasets modeling disagreement patterns, severity drift, and throughput vs accuracy trade-offs. Perform statistical analysis for leadership insights.
 
