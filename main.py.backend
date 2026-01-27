@@ -1997,8 +1997,21 @@ async def chat(request: Request, chat_request: ChatRequest):
         is_hello_there = message_lower == "hello there"
         
         # Deterministic short-circuit for birth questions (guaranteed correct answer)
-        birth_keywords = ['born', 'birth', 'birthday', 'birth date', 'birth year', 'what year were you', 'what month were you']
-        if any(keyword in message_lower for keyword in birth_keywords):
+        # Only trigger on explicit birth date/age questions, not when "birth" appears in other contexts (e.g., "Childbirth")
+        birth_question_patterns = [
+            'when were you born', 'when was you born', 'what year were you born', 'what month were you born',
+            'when were you born?', 'when was you born?', 'what year were you born?', 'what month were you born?',
+            'your birthday', 'your birth date', 'your birth year',
+            'how old are you', 'what is your age', 'what\'s your age',
+            'born in', 'born on', 'birth date', 'birth year', 'birth month'
+        ]
+        # Check if message is explicitly asking about birth/age (not just containing the word "birth")
+        is_birth_question = any(pattern in message_lower for pattern in birth_question_patterns)
+        # Exclude false positives: if "birth" appears but in context of "childbirth", "rebirth", etc., don't trigger
+        if 'childbirth' in message_lower or 'rebirth' in message_lower or 'stillbirth' in message_lower:
+            is_birth_question = False
+        
+        if is_birth_question:
             # Extract birth date from persona data
             if persona_data and "summary.txt" in persona_data:
                 critical_facts = extract_critical_facts(persona_data["summary.txt"])
