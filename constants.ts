@@ -21,18 +21,24 @@ export const RESUME_DATA: ResumeData = {
       role: "AI Operations | RLHF & Model Optimization",
       company: "TaskUs",
       period: "Jun 2024 - Ongoing",
-      description: `Translate fast-changing client policies into production-ready labeling workflows,
+      description: `• Translate fast-changing client policies into production-ready labeling workflows,
 delivering updates under tight timelines while keeping SLAs on track.
+
 • Act as de-facto Subject Matter Expert, resolving complex edge cases and driving
 cross-geo alignment through regular calibration sessions.
+
 • Provide structured model feedback to improve safety coverage, policy precision, and
 FP/FN balance, maintaining consistently top-tier QA performance.
+
 • Build and maintain a live analytics dashboard tracking label drift, policy hot-spots,
 chat engagement, and misalignment signals, used directly in calibrations.
+
 • Partner with QAs, team leads, and clients to translate ambiguous requirements into
 clear rules, examples, and SOP updates.
+
 • Trusted contributor on high-stakes, time-critical initiatives due to rapid
 comprehension, technical depth, and operational reliability.
+
 • Continuous development through completion of internal Team Leader Preparatory
 Academy and Data Science Preparatory Academy.`,
       technologies: ["RLHF", "Trust & Safety", "Python", "Data Analysis", "SOP Development", "Quality Assurance", "Google Sheets", "Statistical Analysis", "Analytics", "Blender", "Gemini API", "Prompt Engineering", "Model Evaluation"]
