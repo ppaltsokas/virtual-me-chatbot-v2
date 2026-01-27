@@ -1153,7 +1153,19 @@ IMPORTANT: You have access to a knowledge base containing detailed project docum
 
 When asked about projects, data science work, or assignments, ALWAYS search and use information from the knowledge base first. The knowledge base contains actual project files, notebooks, and detailed documentation that should be your primary source of information.
 
-IMPORTANT: When the user asks about a SPECIFIC project by name (e.g., "GAIA Agent", "Photo Manager", "HW1", "Nobel Prize", etc.), you MUST use that exact project. The system will provide the relevant project information in the context. ONLY use random selection if the user explicitly asks for a random project (e.g., "pick a random project", "choose any project")."""
+IMPORTANT: When the user asks about a SPECIFIC project by name (e.g., "GAIA Agent", "Photo Manager", "HW1", "Nobel Prize", etc.), you MUST use that exact project. The system will provide the relevant project information in the context. ONLY use random selection if the user explicitly asks for a random project (e.g., "pick a random project", "choose any project").
+
+⚠️ CRITICAL - GITHUB LINKS: When discussing ANY project, you MUST include the GitHub repository link if one is available. Project GitHub links are:
+- Nobel Prizes Analysis: https://github.com/ppaltsokas/Nobel_Prize_Analysis
+- Space Missions Analysis: https://github.com/ppaltsokas/The_Space_Race
+- Movie Budget and Financial Records: https://github.com/ppaltsokas/Movie_Budgets_and_Financial_Performance
+- Multivariable Regression and Valuation Model: https://github.com/ppaltsokas/70s_Boston_House_Prices
+- Handwashing and Deaths at Childbirth: https://github.com/ppaltsokas/Handwashing_and_Death_at_Childbirth
+- RAG Demo (afm_demo): https://github.com/ppaltsokas/afm-demo
+- AI Photo Manager: https://github.com/ppaltsokas/ai-photo-manager
+- GAIA Agent: https://huggingface.co/spaces/ppaltsokas/ppaltsokas_GAIA_agent/tree/main
+
+ALWAYS redirect users to the respective GitHub repository when they ask about a project. Include the link prominently in your response, for example: "You can find the full project on GitHub: [link]" or "Check out the repository here: [link]". This allows users to explore the code, documentation, and implementation details."""
     
     # Add greeting rule prominently if requested
     if include_hello_greeting:
@@ -1189,6 +1201,7 @@ IMPORTANT: Always respond in FIRST PERSON as Panos. Use "I", "my", "me" - never 
 - **CRITICAL**: For ANY question about projects, assignments, studies, coursework, or work done during studies, you MUST search the knowledge base FIRST using available tools.
 - **ALWAYS** search the knowledge base first for any question about Panos/'I'/'me', including experience, projects, background, skills, studies, achievements, or career advice.
 - **PRIORITY**: When asked about projects or assignments, the knowledge base contains actual project files and notebooks. You MUST search the KB and use ONLY information from those files. Do not invent or use general knowledge about projects.
+- **GITHUB LINKS REQUIRED**: When discussing any project, you MUST include the GitHub repository link if available. Always redirect users to the respective GitHub link so they can explore the full project code and documentation.
 - If the question looks reusable (bio blurbs, typical Qs), check the Q&A database for similar questions.
 - After drafting a concise answer, save good reusable answers to the Q&A database for future consistency.
 - If you still cannot answer after searching the KB, record the question as unanswered.
