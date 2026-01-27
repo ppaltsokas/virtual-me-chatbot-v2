@@ -21,19 +21,20 @@ export const RESUME_DATA: ResumeData = {
       role: "AI Operations | RLHF & Model Optimization",
       company: "TaskUs",
       period: "Jun 2024 - Ongoing",
-      description: `• Translate fast-changing client policies into production-grade labeling rules, examples, and SOPs for large-scale RLHF pipelines.
-
-• De-facto Subject Matter Expert. Resolve complex edge cases and drive cross-geo alignment through weekly calibrations.
-
-• Deliver high-impact technical pilots under extreme time pressure, spanning adversarial model evaluation, complex reasoning assessments, and structured data/asset analysis. Led end-to-end execution of time-critical pilots that directly supported new client onboarding and expansion.
-
-• Build and maintain a live analytics dashboard tracking label drift, policy hot-spots, chat engagement, and misalignment signals. Used directly in calibrations and QA reviews.
-
-• Design synthetic Human Data datasets modeling disagreement patterns, severity drift, and throughput vs accuracy trade-offs. Perform statistical analysis for leadership insights.
-
-• Provide structured model feedback to improve safety coverage, policy precision, and FP/FN balance. Maintain consistently top-tier QA performance.
-
-• Selected for all high-stakes pilots due to rapid comprehension, technical depth, and operational reliability.`,
+      description: `Translate fast-changing client policies into production-ready labeling workflows,
+delivering updates under tight timelines while keeping SLAs on track.
+• Act as de-facto Subject Matter Expert, resolving complex edge cases and driving
+cross-geo alignment through regular calibration sessions.
+• Provide structured model feedback to improve safety coverage, policy precision, and
+FP/FN balance, maintaining consistently top-tier QA performance.
+• Build and maintain a live analytics dashboard tracking label drift, policy hot-spots,
+chat engagement, and misalignment signals, used directly in calibrations.
+• Partner with QAs, team leads, and clients to translate ambiguous requirements into
+clear rules, examples, and SOP updates.
+• Trusted contributor on high-stakes, time-critical initiatives due to rapid
+comprehension, technical depth, and operational reliability.
+• Continuous development through completion of internal Team Leader Preparatory
+Academy and Data Science Preparatory Academy.`,
       technologies: ["RLHF", "Trust & Safety", "Python", "Data Analysis", "SOP Development", "Quality Assurance", "Google Sheets", "Statistical Analysis", "Analytics", "Blender", "Gemini API", "Prompt Engineering", "Model Evaluation"]
     },
     {
