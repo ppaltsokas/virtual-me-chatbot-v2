@@ -25,10 +25,7 @@ export const RESUME_DATA: ResumeData = {
 
 • De-facto Subject Matter Expert. Resolve complex edge cases and drive cross-geo alignment through weekly calibrations.
 
-• Deliver high-impact pilots under extreme time pressure, including:
-  - GAIA-style adversarial prompt datasets (Gemini, multimodal & reasoning stress-tests)
-  - Mathematics-based reasoning pilot completed solo in one day (secured new client)
-  - 3D asset & metadata pilot (Blender workflows, textures, hierarchies) by reverse-engineering client intent
+• Deliver high-impact technical pilots under extreme time pressure, spanning adversarial model evaluation, complex reasoning assessments, and structured data/asset analysis. Led end-to-end execution of time-critical pilots that directly supported new client onboarding and expansion.
 
 • Build and maintain a live analytics dashboard tracking label drift, policy hot-spots, chat engagement, and misalignment signals. Used directly in calibrations and QA reviews.
 
