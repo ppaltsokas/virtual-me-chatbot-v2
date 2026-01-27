@@ -1,8 +1,10 @@
 # Fatal Force Analysis
 
-## Introduction
+## Project Overview
 
-This project examines fatal force incidents involving law enforcement in the United States. The analysis explores patterns, trends, and demographic factors in fatal force encounters, providing insights into the data through statistical analysis and visualization.
+**Fatal Force Analysis** is a comprehensive data analysis project examining fatal force incidents involving law enforcement in the United States. This project analyzes patterns, trends, and demographic factors in fatal force encounters, providing insights through statistical analysis and data visualization.
+
+The **Fatal Force Analysis** project investigates fatal force incidents, police shootings, and law enforcement use of force data to understand patterns and trends in these critical events.
 
 ### Import Statements
 
@@ -55,12 +57,20 @@ df.describe()
 
 ### Key Findings and Analysis
 
-This analysis examines fatal force incidents across multiple dimensions:
+The **Fatal Force Analysis** project examines fatal force incidents across multiple dimensions:
 
-1. **Temporal Trends**: Analysis of incidents over time to identify patterns and changes
-2. **Demographic Patterns**: Examination of demographic factors in fatal force encounters
-3. **Geographic Distribution**: Spatial analysis of where incidents occur
-4. **Circumstance Analysis**: Investigation of the circumstances surrounding incidents
+1. **Temporal Trends**: Analysis of fatal force incidents over time to identify patterns and changes in frequency
+2. **Demographic Patterns**: Examination of demographic factors (race, age, gender) in fatal force encounters
+3. **Geographic Distribution**: Spatial analysis of where fatal force incidents occur across different states and regions
+4. **Circumstance Analysis**: Investigation of the circumstances surrounding fatal force incidents, including weapons involved, threat level, and context
+
+### Fatal Force Analysis Methodology
+
+The **Fatal Force Analysis** employs a systematic approach:
+- Data collection and cleaning of fatal force incident records
+- Exploratory data analysis to identify key patterns
+- Statistical analysis to test hypotheses about factors influencing fatal force
+- Visualization to communicate findings effectively
 
 ### Visualizations
 
@@ -88,4 +98,8 @@ Key insights from the analysis include:
 
 ### Conclusion
 
-This data analysis project provides a comprehensive examination of fatal force incidents, using data science techniques to uncover patterns and trends in law enforcement data. The analysis contributes to understanding the complex dynamics of fatal force encounters through rigorous statistical analysis and data visualization.
+The **Fatal Force Analysis** project provides a comprehensive examination of fatal force incidents, using data science techniques to uncover patterns and trends in law enforcement data. This analysis contributes to understanding the complex dynamics of fatal force encounters through rigorous statistical analysis and data visualization.
+
+## Project Keywords
+
+Fatal Force Analysis, fatal force incidents, police shootings, law enforcement data, use of force analysis, statistical analysis of fatal force, demographic patterns in fatal force, geographic distribution of fatal force incidents
