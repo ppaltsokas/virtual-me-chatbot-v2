@@ -2444,6 +2444,7 @@ async def health_check():
     """Health check endpoint with debug information."""
     faiss_status = "not_available"
     faiss_chunks = 0
+    faiss_build_info = None
     if FAISS_AVAILABLE:
         if openai_client:
             try:
@@ -2451,6 +2452,15 @@ async def health_check():
                 if index and meta:
                     faiss_status = "loaded"
                     faiss_chunks = len(meta)
+                    
+                    # Try to load build info if available
+                    build_info_path = FAISS_DIR / "build_info.json"
+                    if build_info_path.exists():
+                        try:
+                            with open(build_info_path, "r", encoding="utf-8") as f:
+                                faiss_build_info = json.load(f)
+                        except Exception:
+                            pass  # Ignore errors reading build info
                 else:
                     faiss_status = "not_built"
             except Exception:
@@ -2506,6 +2516,7 @@ async def health_check():
         "faiss_available": FAISS_AVAILABLE,
         "faiss_status": faiss_status,
         "faiss_chunks": faiss_chunks,
+        "faiss_build_info": faiss_build_info,  # Contains build timestamp, git commit, etc.
         "openai_available": OPENAI_AVAILABLE,
         "cwd": str(Path.cwd()),
         "app_dir": str(BASE_DIR),
@@ -2539,7 +2550,20 @@ async def reload_knowledge_base():
 
 @app.post("/kb/build-faiss")
 async def build_faiss_index_endpoint():
-    """Build or rebuild the FAISS vector index from the knowledge base."""
+    """Build or rebuild the FAISS vector index from the knowledge base.
+    
+    NOTE: This endpoint is disabled in production. The FAISS index is pre-built
+    into the Docker image during the build process for security and performance reasons.
+    """
+    # Disable in production - index is baked into image
+    is_production = os.getenv("PORT") is not None or os.getenv("ENVIRONMENT") == "production"
+    if is_production:
+        raise HTTPException(
+            status_code=403,
+            detail="FAISS index build is disabled in production. Index is pre-built in the Docker image. "
+                   "To rebuild, redeploy with a new Docker image build."
+        )
+    
     if not FAISS_AVAILABLE:
         raise HTTPException(status_code=400, detail="FAISS is not available. Install faiss-cpu package.")
     if not openai_client:

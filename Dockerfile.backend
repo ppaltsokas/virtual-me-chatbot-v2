@@ -21,15 +21,15 @@ RUN if [ -f main.py.backend ]; then mv main.py.backend main.py; fi
 
 # Build FAISS index at image build time (requires OPENAI_API_KEY at build)
 # Pass the key via build arg: --build-arg OPENAI_API_KEY=...
+# NOTE: We use ARG only (not ENV) so the key is NOT baked into the final image
 ARG OPENAI_API_KEY
-ENV OPENAI_API_KEY=${OPENAI_API_KEY}
 
 RUN if [ -n "$OPENAI_API_KEY" ]; then \
       echo "Building FAISS index during image build..." && \
-      python build_faiss_offline.py ; \
+      OPENAI_API_KEY="$OPENAI_API_KEY" python build_faiss_offline.py ; \
     else \
       echo "WARNING: OPENAI_API_KEY not provided at build time; skipping FAISS index build." && \
-      echo "The index will need to be built at runtime via /kb/build-faiss endpoint." ; \
+      echo "The index will need to be built at runtime via /kb/build-faiss endpoint (dev only)." ; \
     fi
 
 # Expose port (Cloud Run uses PORT env var, default to 8080)

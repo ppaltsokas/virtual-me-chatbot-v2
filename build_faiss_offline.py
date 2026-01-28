@@ -17,6 +17,8 @@ Intended use:
 
 import sys
 import io
+import json
+from pathlib import Path
 
 # Fix Windows console encoding if run locally
 if sys.platform == "win32":
@@ -25,7 +27,7 @@ if sys.platform == "win32":
 from datetime import datetime
 
 try:
-    from main import build_faiss_index, FAISS_AVAILABLE, openai_client  # type: ignore
+    from main import build_faiss_index, FAISS_AVAILABLE, openai_client, FAISS_DIR  # type: ignore
 except Exception as e:  # pragma: no cover - only used in build context
     print(f"❌ ERROR: Could not import main module or build_faiss_index: {e}")
     sys.exit(1)
@@ -42,7 +44,8 @@ def main() -> None:
         sys.exit(1)
 
     print("🚀 Starting offline FAISS index build...")
-    print(f"   Timestamp: {datetime.now().isoformat()}")
+    build_start_time = datetime.now()
+    print(f"   Timestamp: {build_start_time.isoformat()}")
 
     try:
         count = build_faiss_index()
@@ -50,9 +53,44 @@ def main() -> None:
         print(f"❌ ERROR: Exception while building FAISS index: {e}")
         sys.exit(1)
 
+    build_end_time = datetime.now()
+    build_duration = (build_end_time - build_start_time).total_seconds()
+    
+    # Write build info to a JSON file for version tracking
+    build_info = {
+        "build_timestamp": build_end_time.isoformat(),
+        "build_duration_seconds": build_duration,
+        "chunks_indexed": count,
+        "build_type": "docker_image_build"
+    }
+    
+    # Try to get git commit hash if available
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['git', 'rev-parse', '--short', 'HEAD'],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            cwd=Path(__file__).parent
+        )
+        if result.returncode == 0:
+            build_info["git_commit"] = result.stdout.strip()
+    except Exception:
+        pass  # Git not available, skip
+    
+    build_info_path = FAISS_DIR / "build_info.json"
+    try:
+        with open(build_info_path, "w", encoding="utf-8") as f:
+            json.dump(build_info, f, indent=2)
+        print(f"   Build info written to: {build_info_path}")
+    except Exception as e:
+        print(f"   ⚠️  Warning: Could not write build info: {e}")
+
     print("✅ FAISS index build completed successfully.")
     print(f"   Chunks indexed: {count}")
-    print(f"   Finished at: {datetime.now().isoformat()}")
+    print(f"   Build duration: {build_duration:.2f} seconds")
+    print(f"   Finished at: {build_end_time.isoformat()}")
 
 
 if __name__ == "__main__":
