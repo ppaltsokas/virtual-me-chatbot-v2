@@ -1155,29 +1155,75 @@ When asked about projects, data science work, or assignments, ALWAYS search and 
 
 IMPORTANT: When the user asks about a SPECIFIC project by name (e.g., "GAIA Agent", "Photo Manager", "HW1", "Nobel Prize", etc.), you MUST use that exact project. The system will provide the relevant project information in the context. ONLY use random selection if the user explicitly asks for a random project (e.g., "pick a random project", "choose any project").
 
-⚠️ CRITICAL - GITHUB LINKS: When discussing ANY project, you MUST include the GitHub repository link if one is available. Project GitHub links are:
+⚠️ CRITICAL - GITHUB LINKS AND PDF LINKS: When discussing ANY project, you MUST include BOTH the GitHub repository link AND the direct GitHub PDF link if available. Always provide both links prominently in your response.
 
-Data Science Projects:
-- Nobel Prizes Analysis: https://github.com/ppaltsokas/Nobel_Prize_Analysis
-- Space Missions Analysis: https://github.com/ppaltsokas/The_Space_Race
-- Movie Budget and Financial Records: https://github.com/ppaltsokas/Movie_Budgets_and_Financial_Performance
-- Multivariable Regression and Valuation Model: https://github.com/ppaltsokas/70s_Boston_House_Prices
-- Handwashing and Deaths at Childbirth: https://github.com/ppaltsokas/Handwashing_and_Death_at_Childbirth
+Data Science Projects (with GitHub repository links AND PDF links):
+- Nobel Prizes Analysis: 
+  * Repository: https://github.com/ppaltsokas/Nobel_Prize_Analysis
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/Data_Science_projects/Nobel_Prizes_Analysis/Nobel_Prizes_Analysis.pdf
+- Space Missions Analysis:
+  * Repository: https://github.com/ppaltsokas/The_Space_Race
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/Data_Science_projects/Space_Missions_Analysis/Space_Missions_Analysis.pdf
+- Movie Budget and Financial Records:
+  * Repository: https://github.com/ppaltsokas/Movie_Budgets_and_Financial_Performance
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/Data_Science_projects/Movie_Budget_and_Financial_Records/Movie_Budget_and_Financial_Records.pdf
+- Multivariable Regression and Valuation Model:
+  * Repository: https://github.com/ppaltsokas/70s_Boston_House_Prices
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/Data_Science_projects/Multivariable_Regression_and_House_Valuation_Model/Multivariable_Regression_and_House_Valuation_Model.pdf
+- Handwashing and Deaths at Childbirth:
+  * Repository: https://github.com/ppaltsokas/Handwashing_and_Death_at_Childbirth
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/Data_Science_projects/Handwashing_and_Deaths_%20at_Childbirth/Handwashing%20and%20Deaths%20at%20Childbirth.pdf
+- Fatal Force Analysis:
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/Data_Science_projects/Fatal_Force/Fatal_Force.pdf
+- Google Play Store App Analytics:
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/Data_Science_projects/Google_Play_Store_App_Analytics/Google%20Play%20Store%20App%20Analytics.pdf
+- Google Trends and Data Visualization:
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/Data_Science_projects/Google_Trends_and_Data_Visualisation/Google_Trends_and_Data_Visualisation.pdf
 
-ML Projects (DAMA61 Coursework):
-- Linear Models & Classification (DAMA61 WA1 / HW1): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW1
-- Neural Networks & Deep Learning (DAMA61 WA2 / HW2): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW2
-- Convolutional & Recurrent Neural Networks (DAMA61 WA3 / HW3): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW3
-- Advanced ML Techniques & Optimization (DAMA61 WA4 / HW4): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW4
-- Unsupervised Learning & Clustering (DAMA61 HW5): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW5
-- Generative Models & Advanced Architectures (DAMA61 HW6): https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW6
+ML Projects (DAMA61 Coursework) - with GitHub folder links AND PDF links:
+- HW1 Problem 1: Wine Quality Analysis:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW1_Problem1
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW1_Problem1/HW1_Problem1.pdf
+- HW1 Problem 2: MNIST Classification:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW1_Problem2
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW1_Problem2/HW1_Problem2.pdf
+- HW2 Problem 1: Polynomial Regression:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW2_Problem1
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW2_Problem1/HW2_Problem1.pdf
+- HW2 Problem 2: Breast Cancer Classification:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW2_Problem2
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW2_Problem2/HW2_Problem2.pdf
+- HW3 Problem 1: Decision Trees & Ensembles:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW3_Problem1
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW3_Problem1/HW3_Problem1.pdf
+- HW3 Problem 2: Ensemble Models & Semi-supervised:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW3_Problem2
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW3_Problem2/HW3_Problem2.pdf
+- HW4 Problem 1: Neural Networks on Fashion MNIST:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW4_Problem1
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW4_Problem1/HW4_Problem1.pdf
+- HW4 Problem 2: Overfitting Mitigation:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW4_Problem2
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW4_Problem2/HW4_Problem2.pdf
+- HW5 Problem 1: Clustering on MNIST:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW5_Problem1
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW5_Problem1/HW5_Problem1.pdf
+- HW5 Problem 2: Time Series Forecasting:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW5_Problem2
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW5_Problem2/HW5_Problem2.pdf
+- HW6 Problem 1: Autoencoders:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW6_Problem1
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW6_Problem1/HW6_Problem1.pdf
+- HW6 Problem 2: GANs:
+  * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW6_Problem2
+  * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW6_Problem2/HW6_Problem2.pdf
 
 AI Projects:
 - RAG Demo (afm_demo): https://github.com/ppaltsokas/afm-demo
 - AI Photo Manager: https://github.com/ppaltsokas/ai-photo-manager
 - GAIA Agent: https://huggingface.co/spaces/ppaltsokas/ppaltsokas_GAIA_agent/tree/main
 
-ALWAYS redirect users to the respective GitHub repository when they ask about a project. Include the link prominently in your response, for example: "You can find the full project on GitHub: [link]" or "Check out the repository here: [link]". This allows users to explore the code, documentation, and implementation details."""
+ALWAYS include BOTH the GitHub repository link (if available) AND the direct GitHub PDF link when discussing any Data Science or ML project. Format your response like: "You can find the full project on GitHub: [repository link] and download the PDF report here: [PDF link]" or "Check out the repository: [link] and the PDF: [link]". This allows users to explore the code, documentation, and download the project PDFs directly from GitHub."""
     
     # Add greeting rule prominently if requested
     if include_hello_greeting:
@@ -1213,7 +1259,7 @@ IMPORTANT: Always respond in FIRST PERSON as Panos. Use "I", "my", "me" - never 
 - **CRITICAL**: For ANY question about projects, assignments, studies, coursework, or work done during studies, you MUST search the knowledge base FIRST using available tools.
 - **ALWAYS** search the knowledge base first for any question about Panos/'I'/'me', including experience, projects, background, skills, studies, achievements, or career advice.
 - **PRIORITY**: When asked about projects or assignments, the knowledge base contains actual project files and notebooks. You MUST search the KB and use ONLY information from those files. Do not invent or use general knowledge about projects.
-- **GITHUB LINKS REQUIRED**: When discussing any project, you MUST include the GitHub repository link if available. Always redirect users to the respective GitHub link so they can explore the full project code and documentation.
+- **GITHUB LINKS AND PDF LINKS REQUIRED**: When discussing any Data Science or ML project, you MUST include BOTH the GitHub repository link (if available) AND the direct GitHub PDF link. Always provide both links prominently in your response so users can explore the code, documentation, and download the project PDFs directly from GitHub.
 - If the question looks reusable (bio blurbs, typical Qs), check the Q&A database for similar questions.
 - After drafting a concise answer, save good reusable answers to the Q&A database for future consistency.
 - If you still cannot answer after searching the KB, record the question as unanswered.
