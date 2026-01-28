@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Simple script to build the FAISS index for the knowledge base.
 Run this after setting OPENAI_API_KEY in .env.local
@@ -6,8 +7,14 @@ Run this after setting OPENAI_API_KEY in .env.local
 
 import requests
 import json
+import sys
+import io
 from pathlib import Path
 from dotenv import load_dotenv
+
+# Fix Windows console encoding for emoji characters
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 # Load environment variables
 env_path = Path('.env.local')

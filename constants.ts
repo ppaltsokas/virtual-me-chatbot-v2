@@ -185,7 +185,7 @@ Academy and Data Science Preparatory Academy.`,
       title: "Nobel Prizes Analysis",
       description: "Comprehensive data analysis of Nobel Prize winners, exploring trends, demographics, and patterns across different categories and time periods.",
       technologies: ["Python", "Pandas", "Data Analysis", "Visualization"],
-      pdfPath: "Data_Science_projects/Nobel_Prizes_Analysis.pdf",
+      pdfPath: "Data_Science_projects/Nobel_Prizes_Analysis/Nobel_Prizes_Analysis.pdf",
       link: "https://github.com/ppaltsokas/Nobel_Prize_Analysis"
     },
     {
@@ -193,7 +193,7 @@ Academy and Data Science Preparatory Academy.`,
       title: "Space Missions Analysis",
       description: "Analysis of space agencies, launch costs evolution, and mission outcomes over decades. Extracted actionable insights from historical space launch data.",
       technologies: ["Python", "Pandas", "Matplotlib", "Seaborn", "Data Analysis"],
-      pdfPath: "Data_Science_projects/Space_Missions_Analysis.pdf",
+      pdfPath: "Data_Science_projects/Space_Missions_Analysis/Space_Missions_Analysis.pdf",
       link: "https://github.com/ppaltsokas/The_Space_Race"
     },
     {
@@ -201,7 +201,7 @@ Academy and Data Science Preparatory Academy.`,
       title: "Movie Budget and Financial Records",
       description: "Analysis of movie budgets, box office performance, and financial records to identify patterns and correlations in the film industry.",
       technologies: ["Python", "Data Analysis", "Financial Analysis", "Visualization"],
-      pdfPath: "Data_Science_projects/Movie_Budget_and_Financial_Records.pdf",
+      pdfPath: "Data_Science_projects/Movie_Budget_and_Financial_Records/Movie_Budget_and_Financial_Records.pdf",
       link: "https://github.com/ppaltsokas/Movie_Budgets_and_Financial_Performance"
     },
     {
@@ -209,7 +209,7 @@ Academy and Data Science Preparatory Academy.`,
       title: "Multivariable Regression and Valuation Model",
       description: "Built regression models to analyze and predict house prices using multiple variables, implementing valuation models for real estate data.",
       technologies: ["Python", "Regression", "Machine Learning", "Statistical Analysis"],
-      pdfPath: "Data_Science_projects/Multivariable_Regression_and_Valuation_Model.pdf",
+      pdfPath: "Data_Science_projects/Multivariable_Regression_and_House_Valuation_Model/Multivariable_Regression_and_House_Valuation_Model.pdf",
       link: "https://github.com/ppaltsokas/70s_Boston_House_Prices"
     },
     {
@@ -217,7 +217,7 @@ Academy and Data Science Preparatory Academy.`,
       title: "Handwashing and Deaths at Childbirth",
       description: "Historical data analysis examining the relationship between handwashing practices and mortality rates in childbirth, demonstrating the impact of medical hygiene.",
       technologies: ["Python", "Data Analysis", "Statistical Analysis", "Historical Data"],
-      pdfPath: "Data_Science_projects/Handwashing and Deaths at Childbirth.pdf",
+      pdfPath: "Data_Science_projects/Handwashing_and_Deaths_ at_Childbirth/Handwashing and Deaths at Childbirth.pdf",
       link: "https://github.com/ppaltsokas/Handwashing_and_Death_at_Childbirth"
     },
     {
@@ -225,7 +225,21 @@ Academy and Data Science Preparatory Academy.`,
       title: "Fatal Force Analysis",
       description: "Data analysis project examining fatal force incidents, patterns, and trends in law enforcement data.",
       technologies: ["Python", "Data Analysis", "Statistical Analysis"],
-      pdfPath: "Data_Science_projects/Fatal_Force.pdf"
+      pdfPath: "Data_Science_projects/Fatal_Force/Fatal_Force.pdf"
+    },
+    {
+      id: "proj-12",
+      title: "Google Play Store App Analytics",
+      description: "Comprehensive analysis of Google Play Store app data, exploring app categories, ratings, reviews, and market trends.",
+      technologies: ["Python", "Pandas", "Data Analysis", "Visualization"],
+      pdfPath: "Data_Science_projects/Google_Play_Store_App_Analytics/Google Play Store App Analytics.pdf"
+    },
+    {
+      id: "proj-13",
+      title: "Google Trends and Data Visualization",
+      description: "Analysis of Google Trends data with advanced visualization techniques to identify patterns, seasonal trends, and search behavior insights.",
+      technologies: ["Python", "Data Visualization", "Google Trends", "Time Series Analysis"],
+      pdfPath: "Data_Science_projects/Google_Trends_and_Data_Visualisation/Google_Trends_and_Data_Visualisation.pdf"
     },
     {
       id: "proj-12",
