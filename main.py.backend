@@ -1679,14 +1679,17 @@ def search_persona_files(query: str, max_chunks: int = 5) -> str:
                 context_parts.append(" ".join(education_lines))
         
         # For age/birth questions, ensure we get the exact birth date sentence
+        # Exclude false positives like "childbirth", "rebirth", "stillbirth"
         if any(word in query_lower for word in ['age', 'old', 'birthday', 'born', 'birth']):
-            # Find sentence with birth date
-            sentences = re.split(r'[.!?]\s+', summary_text)
-            for sent in sentences:
-                if 'born' in sent.lower() and ('1984' in sent or 'december' in sent.lower()):
-                    if sent.strip() not in context_parts:
-                        context_parts.insert(1, sent.strip())  # Insert after first paragraph
-                    break
+            # Don't trigger if "birth" appears in context of "childbirth", "rebirth", etc.
+            if 'childbirth' not in query_lower and 'rebirth' not in query_lower and 'stillbirth' not in query_lower:
+                # Find sentence with birth date
+                sentences = re.split(r'[.!?]\s+', summary_text)
+                for sent in sentences:
+                    if 'born' in sent.lower() and ('1984' in sent or 'december' in sent.lower()):
+                        if sent.strip() not in context_parts:
+                            context_parts.insert(1, sent.strip())  # Insert after first paragraph
+                        break
         
         # Add other relevant sentences based on query
         sentences = re.split(r'[.!?]\s+', summary_text)
