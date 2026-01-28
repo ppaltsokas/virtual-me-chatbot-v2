@@ -73,6 +73,9 @@ start.sh.backend
 deploy-backend.ps1
 fix-cloud-run-key.ps1
 update-cloud-run-key.ps1
+rebase-msg.ps1
+rebase-commit.ps1
+rebase-sequence.ps1
 
 # Personal notes and debugging docs (not for public repo)
 CHAT_DEBUG_RESULTS.md
