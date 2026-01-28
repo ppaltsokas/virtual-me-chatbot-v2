@@ -1,0 +1,55 @@
+steps:
+  # Build the Docker image with FAISS index baked in
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'OPENAI_API_KEY=${_OPENAI_API_KEY}'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/virtual-persona-backend:$SHORT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/virtual-persona-backend:latest'
+      - '-f'
+      - 'Dockerfile.backend'
+      - '.'
+
+  # Push the image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'gcr.io/$PROJECT_ID/virtual-persona-backend'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'virtual-persona-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/virtual-persona-backend:$SHORT_SHA'
+      - '--region'
+      - 'europe-west8'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--timeout'
+      - '300'
+      - '--set-env-vars'
+      - 'GEMINI_API_KEY=${_GEMINI_API_KEY}'
+      - '--set-env-vars'
+      - 'OPENAI_API_KEY=${_OPENAI_API_KEY}'
+
+# Substitution variables (set these in Cloud Build settings or use Secret Manager)
+substitutions:
+  _OPENAI_API_KEY: ''  # Set in Cloud Build trigger settings or use Secret Manager
+  _GEMINI_API_KEY: ''   # Set in Cloud Build trigger settings or use Secret Manager
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'  # Use more CPU for faster FAISS index builds
+
+timeout: '1800s'  # 30 minutes timeout for the entire build (FAISS indexing can take time)
