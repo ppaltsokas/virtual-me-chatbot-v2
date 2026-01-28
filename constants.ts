@@ -242,46 +242,88 @@ Academy and Data Science Preparatory Academy.`,
       pdfPath: "Data_Science_projects/Google_Trends_and_Data_Visualisation/Google_Trends_and_Data_Visualisation.pdf"
     },
     {
-      id: "proj-12",
-      title: "Linear Models & Classification (DAMA61 WA1)",
-      description: "Implemented and evaluated linear regression, logistic regression, and support vector machines. Explored regularization techniques (Ridge, Lasso) and compared model performance across different datasets with cross-validation.",
-      technologies: ["Scikit-learn", "Linear Models", "SVM", "Regularization", "Cross-Validation"],
-      pdfPath: "ML_projects/std163861_Paltsokas_DAMA61_WA1.pdf"
+      id: "proj-18",
+      title: "HW1 Problem 1: Wine Quality Analysis",
+      description: "Implemented linear regression models to analyze wine quality data. Explored feature engineering, model evaluation metrics, and cross-validation techniques on the wine quality dataset.",
+      technologies: ["Scikit-learn", "Linear Regression", "Cross-Validation", "Feature Engineering", "Model Evaluation"],
+      pdfPath: "ML_projects/HW1_Problem1/HW1_Problem1.pdf"
     },
     {
-      id: "proj-13",
-      title: "Neural Networks & Deep Learning (DAMA61 WA2)",
-      description: "Built and trained feedforward neural networks from scratch and using TensorFlow/Keras. Implemented backpropagation, explored different activation functions, and optimized hyperparameters. Applied to image classification tasks.",
-      technologies: ["TensorFlow", "Keras", "Neural Networks", "Backpropagation", "Hyperparameter Tuning"],
-      pdfPath: "ML_projects/std163861_Paltsokas_DAMA61_WA2.pdf"
+      id: "proj-19",
+      title: "HW1 Problem 2: MNIST Classification",
+      description: "Built classification models using SGDClassifier for MNIST digit recognition. Implemented data preprocessing, stratified splitting, and evaluated model performance with various metrics.",
+      technologies: ["Scikit-learn", "SGDClassifier", "Classification", "MNIST", "Stratified Splitting"],
+      pdfPath: "ML_projects/HW1_Problem2/HW1_Problem2.pdf"
     },
     {
-      id: "proj-14",
-      title: "Convolutional & Recurrent Neural Networks (DAMA61 WA3)",
-      description: "Designed and implemented CNNs for image processing and RNNs/GRUs for sequence modeling. Applied transfer learning, explored architectures like VGG and ResNet, and handled sequential data with attention mechanisms.",
-      technologies: ["CNNs", "RNNs", "GRU", "Transfer Learning", "Image Processing", "Sequence Modeling"],
-      pdfPath: "ML_projects/std163861_Paltsokas_DAMA61_WA3.pdf"
+      id: "proj-20",
+      title: "HW2 Problem 1: Polynomial Regression",
+      description: "Applied polynomial regression and learning curves to model non-linear sinusoidal data. Explored model complexity, overfitting, and regularization techniques.",
+      technologies: ["Polynomial Regression", "Learning Curves", "Regularization", "Model Complexity", "Overfitting"],
+      pdfPath: "ML_projects/HW2_Problem1/HW2_Problem1.pdf"
     },
     {
-      id: "proj-15",
-      title: "Advanced ML Techniques & Optimization (DAMA61 WA4)",
-      description: "Explored advanced optimization algorithms (Adam, RMSprop), implemented ensemble methods, and applied dimensionality reduction techniques. Built end-to-end ML pipelines with proper preprocessing, feature engineering, and model deployment considerations.",
-      technologies: ["Optimization", "Ensemble Methods", "Feature Engineering", "ML Pipelines", "Model Deployment"],
-      pdfPath: "ML_projects/std163861_Paltsokas_DAMA61_WA4.pdf"
+      id: "proj-21",
+      title: "HW2 Problem 2: Breast Cancer Classification",
+      description: "Implemented SVM classifiers (LinearSVC and SVC) for breast cancer classification. Applied feature scaling, hyperparameter tuning with GridSearchCV, and evaluated model performance.",
+      technologies: ["SVM", "LinearSVC", "GridSearchCV", "Feature Scaling", "Classification"],
+      pdfPath: "ML_projects/HW2_Problem2/HW2_Problem2.pdf"
     },
     {
-      id: "proj-16",
-      title: "Unsupervised Learning & Clustering (DAMA61 HW5)",
-      description: "Implemented and compared clustering algorithms (K-means, DBSCAN, Hierarchical). Applied dimensionality reduction with PCA and t-SNE for visualization. Explored anomaly detection techniques and evaluated clustering performance metrics.",
-      technologies: ["Clustering", "K-means", "DBSCAN", "PCA", "t-SNE", "Anomaly Detection"],
-      pdfPath: "ML_projects/std163861_Paltsokas_DAMA61_HW5_reduced_final.pdf"
+      id: "proj-22",
+      title: "HW3 Problem 1: Decision Trees & Ensembles",
+      description: "Implemented Decision Trees, Gradient Boosting, and dimensionality reduction techniques on MNIST. Explored PCA for feature reduction and evaluated ensemble model performance.",
+      technologies: ["Decision Trees", "Gradient Boosting", "PCA", "Dimensionality Reduction", "MNIST"],
+      pdfPath: "ML_projects/HW3_Problem1/HW3_Problem1.pdf"
     },
     {
-      id: "proj-17",
-      title: "Generative Models & Advanced Architectures (DAMA61 HW6)",
-      description: "Implemented generative models including Variational Autoencoders (VAEs) and explored advanced neural architectures. Applied techniques for data generation, representation learning, and evaluated model interpretability and fairness.",
-      technologies: ["VAEs", "Generative Models", "Representation Learning", "Model Interpretability"],
-      pdfPath: "ML_projects/std163861_Paltsokas_DAMA61_HW6_full_size.pdf"
+      id: "proj-23",
+      title: "HW3 Problem 2: Ensemble Models & Semi-supervised Learning",
+      description: "Applied ensemble methods (Random Forest, AdaBoost, Bagging) and semi-supervised learning on the Pima diabetes dataset. Evaluated model performance and compared different ensemble strategies.",
+      technologies: ["Random Forest", "AdaBoost", "Bagging", "Semi-supervised Learning", "Ensemble Methods"],
+      pdfPath: "ML_projects/HW3_Problem2/HW3_Problem2.pdf"
+    },
+    {
+      id: "proj-24",
+      title: "HW4 Problem 1: Neural Networks on Fashion MNIST",
+      description: "Built and trained neural networks using TensorFlow/Keras on Fashion MNIST. Explored different feature subsets, network architectures, and hyperparameter optimization.",
+      technologies: ["TensorFlow", "Keras", "Neural Networks", "Fashion MNIST", "Hyperparameter Tuning"],
+      pdfPath: "ML_projects/HW4_Problem1/HW4_Problem1.pdf"
+    },
+    {
+      id: "proj-25",
+      title: "HW4 Problem 2: Overfitting Mitigation",
+      description: "Explored strategies to mitigate overfitting in deep neural networks including dropout, regularization, and early stopping. Applied techniques to Fashion MNIST classification tasks.",
+      technologies: ["Dropout", "Regularization", "Early Stopping", "Overfitting", "Deep Learning"],
+      pdfPath: "ML_projects/HW4_Problem2/HW4_Problem2.pdf"
+    },
+    {
+      id: "proj-26",
+      title: "HW5 Problem 1: Clustering on MNIST",
+      description: "Implemented and compared clustering algorithms (K-means, DBSCAN) on MNIST data. Applied dimensionality reduction with PCA and t-SNE for visualization and cluster evaluation.",
+      technologies: ["K-means", "DBSCAN", "Clustering", "PCA", "t-SNE", "Unsupervised Learning"],
+      pdfPath: "ML_projects/HW5_Problem1/HW5_Problem1.pdf"
+    },
+    {
+      id: "proj-27",
+      title: "HW5 Problem 2: Time Series Forecasting",
+      description: "Built multilayer neural networks for time series forecasting on Monthly Mean Sunspots data. Implemented multi-step ahead forecasting and evaluated model performance on temporal data.",
+      technologies: ["Time Series", "Neural Networks", "Forecasting", "Sunspots", "Temporal Analysis"],
+      pdfPath: "ML_projects/HW5_Problem2/HW5_Problem2.pdf"
+    },
+    {
+      id: "proj-28",
+      title: "HW6 Problem 1: Autoencoders",
+      description: "Implemented and evaluated autoencoder variants for image compression and reconstruction on Fashion MNIST. Compared different architectures and experimental setups for data compression.",
+      technologies: ["Autoencoders", "Image Compression", "Fashion MNIST", "Reconstruction", "Deep Learning"],
+      pdfPath: "ML_projects/HW6_Problem1/HW6_Problem1.pdf"
+    },
+    {
+      id: "proj-29",
+      title: "HW6 Problem 2: Generative Adversarial Networks",
+      description: "Implemented GANs from scratch using TensorFlow to generate synthetic fashion item images. Trained generator and discriminator networks on Fashion MNIST data.",
+      technologies: ["GANs", "Generative Models", "TensorFlow", "Fashion MNIST", "Image Generation"],
+      pdfPath: "ML_projects/HW6_Problem2/HW6_Problem2.pdf"
     }
   ],
   skills: [
