@@ -1,10 +1,11 @@
 steps:
   # Build the Docker image with FAISS index baked in
   - name: 'gcr.io/cloud-builders/docker'
+    secretEnv: ['OPENAI_API_KEY']
     args:
       - 'build'
       - '--build-arg'
-      - 'OPENAI_API_KEY=${_OPENAI_API_KEY}'
+      - 'OPENAI_API_KEY=${OPENAI_API_KEY}'
       - '-t'
       - 'gcr.io/$PROJECT_ID/virtual-persona-backend:$SHORT_SHA'
       - '-t'
@@ -23,6 +24,7 @@ steps:
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
+    secretEnv: ['OPENAI_API_KEY', 'GEMINI_API_KEY']
     args:
       - 'run'
       - 'deploy'
@@ -39,14 +41,17 @@ steps:
       - '--timeout'
       - '300'
       - '--set-env-vars'
-      - 'GEMINI_API_KEY=${_GEMINI_API_KEY}'
+      - 'GEMINI_API_KEY=${GEMINI_API_KEY}'
       - '--set-env-vars'
-      - 'OPENAI_API_KEY=${_OPENAI_API_KEY}'
+      - 'OPENAI_API_KEY=${OPENAI_API_KEY}'
 
-# Substitution variables (set these in Cloud Build settings or use Secret Manager)
-substitutions:
-  _OPENAI_API_KEY: ''  # Set in Cloud Build trigger settings or use Secret Manager
-  _GEMINI_API_KEY: ''   # Set in Cloud Build trigger settings or use Secret Manager
+# Reference secrets from Secret Manager
+availableSecrets:
+  secretManager:
+    - versionName: projects/831351726786/secrets/OPENAI_API_KEY/versions/1
+      env: 'OPENAI_API_KEY'
+    - versionName: projects/831351726786/secrets/GEMINI_API_KEY/versions/1
+      env: 'GEMINI_API_KEY'
 
 options:
   logging: CLOUD_LOGGING_ONLY
