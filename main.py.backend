@@ -2548,12 +2548,13 @@ async def reload_knowledge_base():
         logger.error(f"Error reloading knowledge base: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/kb/build-faiss")
+@app.post("/kb/build-faiss", include_in_schema=False)
 async def build_faiss_index_endpoint():
     """Build or rebuild the FAISS vector index from the knowledge base.
     
     NOTE: This endpoint is disabled in production. The FAISS index is pre-built
     into the Docker image during the build process for security and performance reasons.
+    Hidden from API documentation for security.
     """
     # Disable in production - index is baked into image
     is_production = os.getenv("PORT") is not None or os.getenv("ENVIRONMENT") == "production"
