@@ -41,7 +41,7 @@ comprehension, technical depth, and operational reliability.
 
 • Continuous development through completion of internal Team Leader Preparatory
 Academy and Data Science Preparatory Academy.`,
-      technologies: ["RLHF", "Trust & Safety", "Python", "Data Analysis", "SOP Development", "Quality Assurance", "Google Sheets", "Statistical Analysis", "Analytics", "Blender", "Gemini API", "Prompt Engineering", "Model Evaluation"]
+      technologies: ["RLHF", "Trust & Safety", "Python", "Data Analysis", "SOP Development", "Quality Assurance", "Google Sheets", "Statistical Analysis", "Analytics", "Gemini API", "Prompt Engineering", "Model Evaluation"]
     },
     {
       id: "exp-2",
@@ -155,92 +155,7 @@ Academy and Data Science Preparatory Academy.`,
     }
   ],
   projects: [
-    {
-      id: "proj-1",
-      title: "Generative AI (GANs & Autoencoders)",
-      description: "Built and trained GANs on Fashion MNIST from scratch (TensorFlow/Keras), achieving a realistic generation capability with 0.68 discriminator accuracy. Implemented Sparse Autoencoders for data compression.",
-      technologies: ["TensorFlow", "Keras", "GANs", "Autoencoders", "Python"]
-    },
-    {
-      id: "proj-2",
-      title: "Time Series Forecasting (Sunspots)",
-      description: "Analyzed 270 years of sunspot data using FFT to identify the 11-year cycle. Compared MLP vs GRU models, demonstrating GRU's superior ability to handle long-term dependencies in sequence data.",
-      technologies: ["RNN", "GRU", "Time Series", "FFT", "Matplotlib"]
-    },
-    {
-      id: "proj-3",
-      title: "Advanced Classification Pipelines",
-      description: "Extensive analysis on MNIST & Breast Cancer datasets. Utilized SVMs (RBF vs Linear), PCA for dimensionality reduction, and Gradient Boosting (79% acc). Implemented semi-supervised Label Propagation.",
-      technologies: ["Scikit-learn", "SVM", "PCA", "Gradient Boosting", "GridSearch"]
-    },
-    {
-      id: "proj-5",
-      title: "RAG Demo (afm_demo)",
-      description: "A FastAPI + retrieval workflow application featuring local and containerized development environments and CI cleanup.",
-      technologies: ["FastAPI", "RAG", "Docker", "Google Cloud Run"],
-      link: "https://github.com/ppaltsokas/afm-demo"
-    },
-    {
-      id: "proj-6",
-      title: "Nobel Prizes Analysis",
-      description: "Comprehensive data analysis of Nobel Prize winners, exploring trends, demographics, and patterns across different categories and time periods.",
-      technologies: ["Python", "Pandas", "Data Analysis", "Visualization"],
-      pdfPath: "Data_Science_projects/Nobel_Prizes_Analysis/Nobel_Prizes_Analysis.pdf",
-      link: "https://github.com/ppaltsokas/Nobel_Prize_Analysis"
-    },
-    {
-      id: "proj-7",
-      title: "Space Missions Analysis",
-      description: "Analysis of space agencies, launch costs evolution, and mission outcomes over decades. Extracted actionable insights from historical space launch data.",
-      technologies: ["Python", "Pandas", "Matplotlib", "Seaborn", "Data Analysis"],
-      pdfPath: "Data_Science_projects/Space_Missions_Analysis/Space_Missions_Analysis.pdf",
-      link: "https://github.com/ppaltsokas/The_Space_Race"
-    },
-    {
-      id: "proj-8",
-      title: "Movie Budget and Financial Records",
-      description: "Analysis of movie budgets, box office performance, and financial records to identify patterns and correlations in the film industry.",
-      technologies: ["Python", "Data Analysis", "Financial Analysis", "Visualization"],
-      pdfPath: "Data_Science_projects/Movie_Budget_and_Financial_Records/Movie_Budget_and_Financial_Records.pdf",
-      link: "https://github.com/ppaltsokas/Movie_Budgets_and_Financial_Performance"
-    },
-    {
-      id: "proj-9",
-      title: "Multivariable Regression and Valuation Model",
-      description: "Built regression models to analyze and predict house prices using multiple variables, implementing valuation models for real estate data.",
-      technologies: ["Python", "Regression", "Machine Learning", "Statistical Analysis"],
-      pdfPath: "Data_Science_projects/Multivariable_Regression_and_House_Valuation_Model/Multivariable_Regression_and_House_Valuation_Model.pdf",
-      link: "https://github.com/ppaltsokas/70s_Boston_House_Prices"
-    },
-    {
-      id: "proj-10",
-      title: "Handwashing and Deaths at Childbirth",
-      description: "Historical data analysis examining the relationship between handwashing practices and mortality rates in childbirth, demonstrating the impact of medical hygiene.",
-      technologies: ["Python", "Data Analysis", "Statistical Analysis", "Historical Data"],
-      pdfPath: "Data_Science_projects/Handwashing_and_Deaths_ at_Childbirth/Handwashing and Deaths at Childbirth.pdf",
-      link: "https://github.com/ppaltsokas/Handwashing_and_Death_at_Childbirth"
-    },
-    {
-      id: "proj-11",
-      title: "Fatal Force Analysis",
-      description: "Data analysis project examining fatal force incidents, patterns, and trends in law enforcement data.",
-      technologies: ["Python", "Data Analysis", "Statistical Analysis"],
-      pdfPath: "Data_Science_projects/Fatal_Force/Fatal_Force.pdf"
-    },
-    {
-      id: "proj-12",
-      title: "Google Play Store App Analytics",
-      description: "Comprehensive analysis of Google Play Store app data, exploring app categories, ratings, reviews, and market trends.",
-      technologies: ["Python", "Pandas", "Data Analysis", "Visualization"],
-      pdfPath: "Data_Science_projects/Google_Play_Store_App_Analytics/Google Play Store App Analytics.pdf"
-    },
-    {
-      id: "proj-13",
-      title: "Google Trends and Data Visualization",
-      description: "Analysis of Google Trends data with advanced visualization techniques to identify patterns, seasonal trends, and search behavior insights.",
-      technologies: ["Python", "Data Visualization", "Google Trends", "Time Series Analysis"],
-      pdfPath: "Data_Science_projects/Google_Trends_and_Data_Visualisation/Google_Trends_and_Data_Visualisation.pdf"
-    },
+    // ML Projects (DAMA61 Coursework) - Listed first
     {
       id: "proj-18",
       title: "HW1 Problem 1: Wine Quality Analysis",
@@ -324,6 +239,68 @@ Academy and Data Science Preparatory Academy.`,
       description: "Implemented GANs from scratch using TensorFlow to generate synthetic fashion item images. Trained generator and discriminator networks on Fashion MNIST data.",
       technologies: ["GANs", "Generative Models", "TensorFlow", "Fashion MNIST", "Image Generation"],
       pdfPath: "ML_projects/HW6_Problem2/HW6_Problem2.pdf"
+    },
+    // Data Science Projects - Listed after ML Projects
+    {
+      id: "proj-6",
+      title: "Nobel Prizes Analysis",
+      description: "Comprehensive data analysis of Nobel Prize winners, exploring trends, demographics, and patterns across different categories and time periods.",
+      technologies: ["Python", "Pandas", "Data Analysis", "Visualization"],
+      pdfPath: "Data_Science_projects/Nobel_Prizes_Analysis/Nobel_Prizes_Analysis.pdf",
+      link: "https://github.com/ppaltsokas/Nobel_Prize_Analysis"
+    },
+    {
+      id: "proj-7",
+      title: "Space Missions Analysis",
+      description: "Analysis of space agencies, launch costs evolution, and mission outcomes over decades. Extracted actionable insights from historical space launch data.",
+      technologies: ["Python", "Pandas", "Matplotlib", "Seaborn", "Data Analysis"],
+      pdfPath: "Data_Science_projects/Space_Missions_Analysis/Space_Missions_Analysis.pdf",
+      link: "https://github.com/ppaltsokas/The_Space_Race"
+    },
+    {
+      id: "proj-8",
+      title: "Movie Budget and Financial Records",
+      description: "Analysis of movie budgets, box office performance, and financial records to identify patterns and correlations in the film industry.",
+      technologies: ["Python", "Data Analysis", "Financial Analysis", "Visualization"],
+      pdfPath: "Data_Science_projects/Movie_Budget_and_Financial_Records/Movie_Budget_and_Financial_Records.pdf",
+      link: "https://github.com/ppaltsokas/Movie_Budgets_and_Financial_Performance"
+    },
+    {
+      id: "proj-9",
+      title: "Multivariable Regression and Valuation Model",
+      description: "Built regression models to analyze and predict house prices using multiple variables, implementing valuation models for real estate data.",
+      technologies: ["Python", "Regression", "Machine Learning", "Statistical Analysis"],
+      pdfPath: "Data_Science_projects/Multivariable_Regression_and_House_Valuation_Model/Multivariable_Regression_and_House_Valuation_Model.pdf",
+      link: "https://github.com/ppaltsokas/70s_Boston_House_Prices"
+    },
+    {
+      id: "proj-10",
+      title: "Handwashing and Deaths at Childbirth",
+      description: "Historical data analysis examining the relationship between handwashing practices and mortality rates in childbirth, demonstrating the impact of medical hygiene.",
+      technologies: ["Python", "Data Analysis", "Statistical Analysis", "Historical Data"],
+      pdfPath: "Data_Science_projects/Handwashing_and_Deaths_ at_Childbirth/Handwashing and Deaths at Childbirth.pdf",
+      link: "https://github.com/ppaltsokas/Handwashing_and_Death_at_Childbirth"
+    },
+    {
+      id: "proj-11",
+      title: "Fatal Force Analysis",
+      description: "Data analysis project examining fatal force incidents, patterns, and trends in law enforcement data.",
+      technologies: ["Python", "Data Analysis", "Statistical Analysis"],
+      pdfPath: "Data_Science_projects/Fatal_Force/Fatal_Force.pdf"
+    },
+    {
+      id: "proj-12",
+      title: "Google Play Store App Analytics",
+      description: "Comprehensive analysis of Google Play Store app data, exploring app categories, ratings, reviews, and market trends.",
+      technologies: ["Python", "Pandas", "Data Analysis", "Visualization"],
+      pdfPath: "Data_Science_projects/Google_Play_Store_App_Analytics/Google Play Store App Analytics.pdf"
+    },
+    {
+      id: "proj-13",
+      title: "Google Trends and Data Visualization",
+      description: "Analysis of Google Trends data with advanced visualization techniques to identify patterns, seasonal trends, and search behavior insights.",
+      technologies: ["Python", "Data Visualization", "Google Trends", "Time Series Analysis"],
+      pdfPath: "Data_Science_projects/Google_Trends_and_Data_Visualisation/Google_Trends_and_Data_Visualisation.pdf"
     }
   ],
   skills: [
