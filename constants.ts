@@ -90,7 +90,7 @@ Academy and Data Science Preparatory Academy.`,
       issuer: "Hugging Face",
       year: "2025",
       icon: "/huggingface-icon.png",
-      credentialUrl: "https://cas-bridge.xethub.hf.co/xet-bridge-us/6800ea554845e4edbca48825/12e11668ea3406870f808fff75513db533a2b4bf0e8687a86108ae7776b01e51?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=cas%2F20260123%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260123T221550Z&X-Amz-Expires=3600&X-Amz-Signature=3d1991bc54e97bcb6f4826dbde5133dcb960ca17809f47fd3ba6f9e59770169e&X-Amz-SignedHeaders=host&X-Xet-Cas-Uid=652f0bb7821e30c4c03d9947&response-content-disposition=inline%3B+filename*%3DUTF-8%27%272025-11-13.png%3B+filename%3D%222025-11-13.png%22%3B&response-content-type=image%2Fpng&x-id=GetObject&Expires=1769210150&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc2OTIxMDE1MH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2FzLWJyaWRnZS54ZXRodWIuaGYuY28veGV0LWJyaWRnZS11cy82ODAwZWE1NTQ4NDVlNGVkYmNhNDg4MjUvMTJlMTE2NjhlYTM0MDY4NzBmODA4ZmZmNzU1MTNkYjUzM2EyYjRiZjBlODY4N2E4NjEwOGFlNzc3NmIwMWU1MSoifV19&Signature=qcA5uDuH68Gv0-jSbxgki1JYnqBczp3ZpvBmQf2j%7ECF1%7EgqaPi-6FKgdJXkl-eTFhFj%7EJpUROyTUbnjXUUwt2xrvyblbSybg8vXYMGrI4ENm4VNRYB5K6h1MianKVfAXPdQ3gyRJZFLijuToooow5xCIDYTTRZGi78bpGjOwmKN3AqwuIos36s1Xj-9hRTPyitQkmrNfNKtUs08VHI%7Ex%7E3fCqXws35d-t33xPesXw1lVG9jjd3Qb3qkF6zESN3KYRPiny2m6hdVw3%7Edoy-h5aFvVo5eaZo5wLLpMn0RSJ%7Es7TuKCgY3ocWgnHj6M%7Ed0OqZYp0Luo4tsGeQvfwP9jug__&Key-Pair-Id=K2L8F4GPSG1IFC"
+      credentialUrl: "https://media.licdn.com/dms/image/v2/D4D22AQE5yUTXeIlm7Q/feedshare-shrink_2048_1536/B4DZp_o36dGgAw-/0/1763078013451?e=1771459200&v=beta&t=6DqSSo_WlFVC0u-G_FgcFgTYRbj1M7Ly_oL-8W6uVVI"
     },
     {
       id: "cert-2",

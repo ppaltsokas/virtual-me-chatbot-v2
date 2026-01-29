@@ -1149,7 +1149,8 @@ IMPORTANT: You have access to a knowledge base containing detailed project docum
   * HW5: Unsupervised Learning and Clustering
   * HW6: Autoencoders and Generative Adversarial Networks (GANs)
 - AI projects in the AI_projects folder:
-  * GAIA Agent: Multi-tool AI agent for complex question answering using LangGraph, LangChain, and multiple specialized tools
+  * GAIA Agent: Multi-tool AI agent for complex question answering using LangGraph, LangChain, and multiple specialized tools (documentation in GAIA_SUMMARY.md)
+  * AI Photo Manager: Local photo manager with semantic search using AI vision models (documentation in AI_PHOTO_MANAGER_SUMMARY.md)
 
 When asked about projects, data science work, or assignments, ALWAYS search and use information from the knowledge base first. The knowledge base contains actual project files, notebooks, and detailed documentation that should be your primary source of information.
 
@@ -1218,10 +1219,13 @@ ML Projects (DAMA61 Coursework) - with GitHub folder links AND PDF links:
   * Folder: https://github.com/ppaltsokas/virtual-me-chatbot-v2/tree/main/kb/ML_projects/HW6_Problem2
   * PDF: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/ML_projects/HW6_Problem2/HW6_Problem2.pdf
 
-AI Projects:
-- RAG Demo (afm_demo): https://github.com/ppaltsokas/afm-demo
-- AI Photo Manager: https://github.com/ppaltsokas/ai-photo-manager
-- GAIA Agent: https://huggingface.co/spaces/ppaltsokas/ppaltsokas_GAIA_agent/tree/main
+AI Projects (with GitHub repository links AND markdown documentation):
+- GAIA Agent:
+  * Repository: https://huggingface.co/spaces/ppaltsokas/ppaltsokas_GAIA_agent/tree/main
+  * Documentation: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/AI_projects/ppaltsokas_GAIA_agent/GAIA_SUMMARY.md
+- AI Photo Manager:
+  * Repository: https://github.com/ppaltsokas/ai-photo-manager
+  * Documentation: https://github.com/ppaltsokas/virtual-me-chatbot-v2/blob/main/kb/AI_projects/ai-photo-manager/AI_PHOTO_MANAGER_SUMMARY.md
 
 ALWAYS include BOTH the GitHub repository link (if available) AND the direct GitHub PDF link when discussing any Data Science or ML project. Format your response like: "You can find the full project on GitHub: [repository link] and download the PDF report here: [PDF link]" or "Check out the repository: [link] and the PDF: [link]". This allows users to explore the code, documentation, and download the project PDFs directly from GitHub."""
     
@@ -1838,14 +1842,20 @@ def search_knowledge_base(query: str, max_results: int = 3, random_selection: bo
         else:
             # Special handling for AI projects - check FIRST before other matches
             if 'gaia' in query_lower:
-                if 'gaia' in filename_lower:
+                if 'gaia' in filename_lower and ('summary' in filename_lower or 'gaia_summary' in filename_lower):
+                    filename_score = 600  # Highest score for GAIA summary markdown
+                    logger.debug(f"GAIA summary markdown match found: {filename}")
+                elif 'gaia' in filename_lower:
                     filename_score = 500  # Very high score for GAIA matches
                     logger.debug(f"GAIA filename match found: {filename}")
                 elif 'ppaltsokas_gaia_agent' in filename_lower:
                     filename_score = 500
                     logger.debug(f"GAIA agent path match found: {filename}")
             elif 'photo manager' in query_lower or 'photo gallery' in query_lower or 'ai photo' in query_lower:
-                if 'photo' in filename_lower and ('manager' in filename_lower or 'gallery' in filename_lower):
+                if 'photo' in filename_lower and ('manager' in filename_lower or 'gallery' in filename_lower) and 'summary' in filename_lower:
+                    filename_score = 600  # Highest score for Photo Manager summary markdown
+                    logger.debug(f"Photo Manager summary markdown match found: {filename}")
+                elif 'photo' in filename_lower and ('manager' in filename_lower or 'gallery' in filename_lower):
                     filename_score = 500
                     logger.debug(f"Photo manager filename match found: {filename}")
                 elif 'ai-photo-manager' in filename_lower:
@@ -1969,15 +1979,25 @@ def search_knowledge_base(query: str, max_results: int = 3, random_selection: bo
     # This prevents returning wrong projects even if they score high
     query_lower_for_filter = query.lower()
     if 'gaia' in query_lower_for_filter and results:
-        # Filter to only GAIA-related files
+        # Filter to only GAIA-related files, prioritize summary markdown
         gaia_results = [r for r in results if 'gaia' in r[0].lower()]
         if gaia_results:
+            # Prioritize summary markdown files
+            summary_files = [r for r in gaia_results if 'summary' in r[0].lower() and 'gaia' in r[0].lower()]
+            if summary_files:
+                logger.info(f"Filtered to GAIA summary markdown: {[r[0] for r in summary_files]}")
+                return summary_files[:max_results]
             logger.info(f"Filtered to GAIA projects: {[r[0] for r in gaia_results]}")
             return gaia_results[:max_results]
     elif ('photo manager' in query_lower_for_filter or 'photo gallery' in query_lower_for_filter or 'ai photo' in query_lower_for_filter) and results:
-        # Filter to only Photo Manager files
+        # Filter to only Photo Manager files, prioritize summary markdown
         photo_results = [r for r in results if 'photo' in r[0].lower() and ('manager' in r[0].lower() or 'gallery' in r[0].lower())]
         if photo_results:
+            # Prioritize summary markdown files
+            summary_files = [r for r in photo_results if 'summary' in r[0].lower() and 'photo' in r[0].lower()]
+            if summary_files:
+                logger.info(f"Filtered to Photo Manager summary markdown: {[r[0] for r in summary_files]}")
+                return summary_files[:max_results]
             logger.info(f"Filtered to Photo Manager projects: {[r[0] for r in photo_results]}")
             return photo_results[:max_results]
     

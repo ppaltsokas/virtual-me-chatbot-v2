@@ -21,6 +21,7 @@ This is a two-part application:
 
 - Retrieval-Augmented Generation (RAG): The chatbot uses RAG over documents, dynamically referencing project files, assignments, and professional data at inference time
 - Knowledge Base Integration: Semantic search across 150+ documents including Data Science projects, Machine Learning assignments, and AI projects
+- FAISS Vector Search: Pre-built vector index for fast, accurate semantic search (baked into production Docker image)
 - Real-time Streaming: FastAPI backend with streaming responses for natural conversation flow
 - Session Management: Thread-safe chat session handling with automatic cleanup
 - Precise Project Matching: Advanced search with negative keyword detection to ensure accurate project retrieval
@@ -63,13 +64,14 @@ The system only searches the knowledge base on initial queries or explicit reque
 ### AI & ML
 - Google Gemini API - Large language model for text generation
 - Retrieval-Augmented Generation - Document grounding approach
-- Semantic Search - Custom relevance scoring algorithm
-- FAISS - Vector similarity search (optional, for improved retrieval)
+- FAISS - Vector similarity search for semantic retrieval
+- OpenAI Embeddings - Vector embeddings for knowledge base indexing
 
 ### Infrastructure
-- Google Cloud Run - Backend deployment (containerized)
+- Google Cloud Run - Backend deployment (containerized, auto-scaling)
+- Google Cloud Build - Automated CI/CD with Secret Manager integration
 - Railway - Frontend deployment
-- Docker - Containerization
+- Docker - Containerization with pre-built FAISS index
 
 ### Document Processing
 - PyPDF2 - PDF text and image extraction
@@ -99,12 +101,26 @@ pip install -r requirements.txt.backend
 
 ### Configuration
 
-Create a `.env.local` file:
+Create a `.env.local` file for the frontend:
 
 ```env
 GEMINI_API_KEY=your_api_key_here
 VITE_API_URL=http://localhost:8000
 ```
+
+For the backend, set environment variables:
+
+```bash
+# Windows PowerShell
+$env:OPENAI_API_KEY="your_openai_key"
+$env:GEMINI_API_KEY="your_gemini_key"
+
+# Linux/Mac
+export OPENAI_API_KEY="your_openai_key"
+export GEMINI_API_KEY="your_gemini_key"
+```
+
+**Note**: `OPENAI_API_KEY` is required for FAISS index building (local and production).
 
 ### Running Locally
 
@@ -127,8 +143,8 @@ virtual-me-chatbot-v2/
 ├── services/           # Frontend API services
 │   └── geminiService.ts
 ├── kb/                 # Knowledge base
-│   ├── Data_Science_projects/
-│   ├── ML_projects/    # HW1-HW6 organized by assignment
+│   ├── Data_Science_projects/  # 8 Data Science projects with technical analysis
+│   ├── ML_projects/    # 12 ML assignments (HW1-HW6, each with Problem1 & Problem2)
 │   ├── AI_projects/    # GAIA Agent, Photo Manager
 │   └── images/         # Extracted PDF images
 ├── me/                 # Personal profile data
@@ -143,13 +159,16 @@ virtual-me-chatbot-v2/
 
 - No personal data is intentionally stored by the application
 - Sensitive files are excluded from version control via `.gitignore`
-- API keys are handled via environment variables only
+- API keys stored in Google Cloud Secret Manager (production)
+- API keys handled via environment variables only (local development)
 - Environment files (`.env*`) are excluded from the repository
+- Production endpoints secured (build endpoints disabled in production)
 - Infrastructure-level logs may exist at deployment platform
 
 ## Documentation
 
 - ARCHITECTURE.md - Detailed architecture explanation and how everything works
+- DEPLOYMENT_FAISS.md - FAISS index deployment strategy and sync mechanism
 - PROJECT_OVERVIEW.md - Technical architecture and design decisions
 - SECURITY.md - Security best practices and key management
 
@@ -158,7 +177,7 @@ virtual-me-chatbot-v2/
 Live Site: https://www.ppaltsokas.com  
 Railway Deployment: https://virtual-me-chatbot-v2-production.up.railway.app
 
-The portfolio is live and fully functional with custom domain, SSL certificate, and all features enabled including the AI chatbot.
+The portfolio is live and fully functional with custom domain, SSL certificate, and all features enabled including the AI chatbot. The backend automatically rebuilds the FAISS index on each deployment to stay synchronized with the knowledge base.
 
 ## Author
 
