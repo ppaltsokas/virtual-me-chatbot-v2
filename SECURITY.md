@@ -125,7 +125,6 @@ gcloud run services update virtual-persona-backend `
 ### 🆘 If Your Key is Exposed
 
 1. **Immediately rotate the key**:
-   - Go to https://aistudio.google.com/app/apikey
    - Delete the old key
    - Create a new key
 
