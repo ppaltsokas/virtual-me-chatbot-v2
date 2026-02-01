@@ -151,7 +151,7 @@ Academy and Data Science Preparatory Academy.`,
       title: "Hugging Face AI Agents (Applied)",
       description: "Designed agentic AI systems to tackle GAIA benchmark tasks, emphasizing complex reasoning, tool selection, retrieval-augmented generation (RAG), and answer verification. Implemented dynamic tool routing, fallback strategies, and constrained local inference to improve accuracy on adversarial, multi-modal questions.",
       technologies: ["AI Agents", "RAG", "Tool Calling", "LlamaIndex", "Hugging Face", "Agent Evaluation", "Python"],
-      link: "https://huggingface.co/spaces/ppaltsokas/ppaltsokas_GAIA_agent/tree/main"
+      link: "https://huggingface.co/spaces/ppaltsokas/ppaltsokas_GAIA_agent"
     }
   ],
   projects: [
