@@ -101,3 +101,9 @@ build_faiss_index.py
 
 # Debug logs
 backend_debug.log
+
+# Generated local runtime data
+data/qadb.sqlite
+models/faiss/index.faiss
+models/faiss/store.jsonl
+models/faiss/build_info.json
