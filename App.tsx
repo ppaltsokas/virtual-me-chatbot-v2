@@ -142,7 +142,9 @@ const App: React.FC = () => {
 
           <div className="mt-8 lg:mt-0 hidden lg:block">
              <a 
-                href={`${API_URL}/me/cv`}
+                href="https://drive.google.com/file/d/1xyCV4GKH60UVutaFdNh-iaqsaPltccF0/view?usp=drive_link"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-900 font-semibold rounded-xl hover:bg-white transition-all shadow-lg shadow-white/5 active:scale-95"
              >
                <Download size={18} />
