@@ -6,7 +6,7 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export const RESUME_DATA: ResumeData = {
   personalInfo: {
     name: "Panagiotis Paltsokas",
-    title: "AI/ML Engineer",
+    title: "Data Scientist | AI/ML Engineer",
     bio: "Data Scientist with hands-on experience in data science, analytics, and AI engineering, combining practical project work with continuous learning and adaptation to emerging technologies. I enjoy building data-driven solutions, AI tools, and analytical workflows that solve real problems and create measurable value. I am particularly motivated by the rapid evolution of AI and seek to contribute in roles where I can apply modern technologies, expand my expertise, and grow alongside the next generation of intelligent systems.",
     email: "ppaltsokas@gmail.com",
     location: "Thessaloniki, GR",
