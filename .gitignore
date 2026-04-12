@@ -90,6 +90,9 @@ NAMECHEAP_RAILWAY_SETUP.md
 DOMAIN_SETUP.md
 VERIFY_SETUP.md
 CONVERT_NOTEBOOKS.md
+A.md
+B.md
+C.md
 
 # Test and utility scripts (local development only)
 test_chat_with_logs.py

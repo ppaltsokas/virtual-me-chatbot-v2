@@ -108,7 +108,7 @@ const App: React.FC = () => {
               </p>
             </div>
             
-            <p className="max-w-2xl text-slate-400 leading-relaxed">
+            <p className="max-w-2xl text-slate-400 leading-relaxed text-justify">
               {personalInfo.bio}
             </p>
 
@@ -142,9 +142,7 @@ const App: React.FC = () => {
 
           <div className="mt-8 lg:mt-0 hidden lg:block">
              <a 
-                href="https://drive.google.com/file/d/1pLvBRR5rBtF-GEbvHuvjKj5ZiAw3svS4/view?usp=drive_link"
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`${API_URL}/me/cv`}
                 className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-900 font-semibold rounded-xl hover:bg-white transition-all shadow-lg shadow-white/5 active:scale-95"
              >
                <Download size={18} />

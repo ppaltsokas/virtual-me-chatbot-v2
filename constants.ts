@@ -6,8 +6,8 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export const RESUME_DATA: ResumeData = {
   personalInfo: {
     name: "Panagiotis Paltsokas",
-    title: "Data Scientist | AI Operations & Human Data",
-    bio: "Data Scientist who actively practices data science, analytics, and AI engineering through hands-on work, self-initiated projects, and continuous online training. I independently build dashboards, develop AI tools and automations, and analyze complex datasets to sharpen my technical skills. I am seeking a role that enables daily application and sustained upskilling in data, machine learning, and AI-driven problem solving.",
+    title: "AI/ML Engineer",
+    bio: "Data Scientist with hands-on experience in data science, analytics, and AI engineering, combining practical project work with continuous learning and adaptation to emerging technologies. I enjoy building data-driven solutions, AI tools, and analytical workflows that solve real problems and create measurable value. I am particularly motivated by the rapid evolution of AI and seek to contribute in roles where I can apply modern technologies, expand my expertise, and grow alongside the next generation of intelligent systems.",
     email: "ppaltsokas@gmail.com",
     location: "Thessaloniki, GR",
     socials: {
@@ -17,31 +17,30 @@ export const RESUME_DATA: ResumeData = {
   },
   experience: [
     {
+      id: "exp-0",
+      role: "AI/ML Engineer",
+      company: "Dotsoft SA",
+      period: "Feb 2026 - Ongoing",
+      description: `• Design and develop end-to-end machine learning solutions, covering data preparation, feature engineering, model training, evaluation, deployment, and monitoring.
+
+• Build production-oriented AI/ML pipelines and services for real-world use cases, using modular Python development, Docker-based containerization, database integration, and a strong focus on operational reliability.
+
+• Contribute across the full ML lifecycle, including exploratory analysis, experimentation, inference workflows, API integration, and continuous improvement of deployed solutions.`,
+      technologies: ["Python", "Machine Learning", "Feature Engineering", "Model Training", "Model Evaluation", "Docker", "Databases", "API Integration", "ML Pipelines", "Monitoring"]
+    },
+    {
       id: "exp-1",
-      role: "AI Operations | RLHF & Model Optimization",
+      role: "AI Operations & Human Data",
       company: "TaskUs",
-      period: "Jun 2024 - Ongoing",
-      description: `• Translate fast-changing client policies into production-ready labeling workflows,
-delivering updates under tight timelines while keeping SLAs on track.
+      period: "Jun 2024 - Feb 2026",
+      description: `• Build and maintain a live analytics dashboard tracking label drift, policy hot-spots, chat engagement, and misalignment signals, used directly in calibrations.
 
-• Act as de-facto Subject Matter Expert, resolving complex edge cases and driving
-cross-geo alignment through regular calibration sessions.
+• Partner with QAs, team leads, and clients to translate ambiguous requirements into clear rules, examples, and SOP updates.
 
-• Provide structured model feedback to improve safety coverage, policy precision, and
-FP/FN balance, maintaining consistently top-tier QA performance.
+• Trusted contributor on high-stakes, time-critical initiatives due to rapid comprehension, technical depth, and operational reliability.
 
-• Build and maintain a live analytics dashboard tracking label drift, policy hot-spots,
-chat engagement, and misalignment signals, used directly in calibrations.
-
-• Partner with QAs, team leads, and clients to translate ambiguous requirements into
-clear rules, examples, and SOP updates.
-
-• Trusted contributor on high-stakes, time-critical initiatives due to rapid
-comprehension, technical depth, and operational reliability.
-
-• Continuous development through completion of internal Team Leader Preparatory
-Academy and Data Science Preparatory Academy.`,
-      technologies: ["RLHF", "Trust & Safety", "Python", "Data Analysis", "SOP Development", "Quality Assurance", "Google Sheets", "Statistical Analysis", "Analytics", "Gemini API", "Prompt Engineering", "Model Evaluation"]
+• Continuous development through completion of internal Team Leader Preparatory Academy and Data Science Preparatory Academy.`,
+      technologies: ["Human Data", "Analytics", "Dashboarding", "Data Analysis", "Trust & Safety", "SOP Development", "Quality Assurance", "Model Evaluation", "Cross-functional Collaboration"]
     },
     {
       id: "exp-2",
@@ -314,7 +313,7 @@ Academy and Data Science Preparatory Academy.`,
     },
     {
       name: "DevOps & Cloud",
-      skills: ["Docker", "FastAPI", "Git", "Google Cloud Run", "Railway", "CI/CD", "Jupyter", "PyCharm", "Cursor"]
+      skills: ["Docker", "FastAPI", "Git", "Google Cloud Run", "Railway", "CI/CD", "Postman", "Jupyter", "PyCharm", "Cursor"]
     },
     {
       name: "Languages",

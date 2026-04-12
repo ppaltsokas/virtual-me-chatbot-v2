@@ -1104,7 +1104,8 @@ def build_system_prompt(include_hello_greeting: bool = True) -> str:
     
     # Build the "About you" section with embedded critical facts
     about_you = """About you:
-- Working as AI Operations | RLHF & Model Optimization at TaskUs (Jun 2024 - Ongoing)
+- Working as AI/ML Engineer at Dotsoft SA (Feb 2026 - Ongoing)
+- Previously worked as AI Operations & Human Data at TaskUs (Jun 2024 - Feb 2026)
 - COMPLETED MSc in Data Science & Machine Learning from Hellenic Open University in 2025 (grade 9.98/10) - NOT pursuing, COMPLETED
 - COMPLETED BSc in Mathematics from University of Ioannina in 2014
 - Based in Thessaloniki, Greece
