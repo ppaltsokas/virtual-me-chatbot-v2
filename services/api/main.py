@@ -46,9 +46,13 @@ try:
 except ImportError:
     pass
 
+# Service and repo paths
+BASE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 # Configure logging first
 # Configure logging to both console and file
-log_file = Path("backend_debug.log")
+log_file = REPO_ROOT / "backend_debug.log"
 file_handler = logging.FileHandler(log_file, encoding='utf-8')
 file_handler.setLevel(logging.INFO)
 file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -76,7 +80,7 @@ if not NBFORMAT_AVAILABLE:
 
 # Load environment variables from .env.local file
 # Use override=True to ensure .env.local takes precedence over system environment variables
-env_path = Path('.env.local')
+env_path = REPO_ROOT / '.env.local'
 if env_path.exists():
     load_dotenv(dotenv_path=env_path, override=True)
     logger.info(f"Loaded environment variables from {env_path} (overriding system vars)")
@@ -263,10 +267,9 @@ def should_alert(message: str, message_hash: Optional[str] = None) -> Optional[s
     return None
 
 # Knowledge Base Configuration
-# Use absolute paths relative to this Python file to avoid path drift in Cloud Run
-BASE_DIR = Path(__file__).resolve().parent
-KB_FOLDER = BASE_DIR / "kb"
-ME_FOLDER = BASE_DIR / "me"  # Persona/profile data folder
+# Use absolute repo-root paths so the API service can live under services/api
+KB_FOLDER = REPO_ROOT / "kb"
+ME_FOLDER = REPO_ROOT / "me"  # Persona/profile data folder
 
 # Log paths for debugging
 logger.info(f"BASE_DIR: {BASE_DIR}")
@@ -283,13 +286,13 @@ persona_data: Dict[str, str] = {}
 persona_metadata: Dict[str, Dict] = {}  # Store metadata like file type, size, etc.
 
 # Images folder for extracted PDF images
-IMAGES_FOLDER = Path("kb/images")
+IMAGES_FOLDER = KB_FOLDER / "images"
 IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
 
 # =============================================================
 # SQLite Q&A Database (Persistent Memory)
 # =============================================================
-DATA_FOLDER = Path("data")
+DATA_FOLDER = REPO_ROOT / "data"
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
 QADB = DATA_FOLDER / "qadb.sqlite"
 
@@ -373,7 +376,7 @@ def qadb_upsert(question: str, answer: str, tags: str = None) -> Dict:
 # =============================================================
 # FAISS Vector Search (Semantic Search)
 # =============================================================
-FAISS_DIR = Path("models/faiss")
+FAISS_DIR = REPO_ROOT / "models" / "faiss"
 FAISS_DIR.mkdir(parents=True, exist_ok=True)
 FAISS_INDEX = FAISS_DIR / "index.faiss"
 FAISS_STORE = FAISS_DIR / "store.jsonl"
@@ -469,7 +472,7 @@ openai_client: Optional[OpenAI] = None
 if OPENAI_AVAILABLE:
     openai_api_key = None
     # First, explicitly read from .env.local if it exists
-    env_path = Path('.env.local')
+    env_path = REPO_ROOT / '.env.local'
     if env_path.exists():
         from dotenv import dotenv_values
         env_vars = dotenv_values(dotenv_path=env_path)

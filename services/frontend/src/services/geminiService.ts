@@ -7,7 +7,7 @@ export interface ChatSession {
 // Creates a chat session for backend communication
 export const createChatSession = (): ChatSession => {
   // Get API URL from env or default to localhost
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const API_URL = import.meta.env.VITE_API_URL || '/api';
   
   // Log API URL at startup for debugging (only in development)
   if (import.meta.env.DEV) {

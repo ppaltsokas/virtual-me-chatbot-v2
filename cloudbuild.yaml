@@ -11,7 +11,7 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/virtual-persona-backend:latest'
       - '-f'
-      - 'Dockerfile.backend'
+      - 'services/api/Dockerfile.backend'
       - '.'
 
   # Push the image to Container Registry

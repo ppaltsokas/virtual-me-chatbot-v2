@@ -1,0 +1,78 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: services/api/Dockerfile.backend
+    ports:
+      - "8000:8080"
+    env_file:
+      - ../../.env.local
+    volumes:
+      - ../../kb:/app/kb
+      - ../../me:/app/me
+      - ../../models:/app/models
+      - ../../data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    image: node:22
+    working_dir: /workspace/services/frontend
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: /api
+      VITE_API_PROXY_TARGET: http://api:8080
+    volumes:
+      - ../..:/workspace
+      - frontend_node_modules:/workspace/services/frontend/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  indexer:
+    profiles: ["tools"]
+    build:
+      context: ../..
+      dockerfile: services/api/Dockerfile.backend
+    env_file:
+      - ../../.env.local
+    command: python services/indexer/build_faiss_offline.py
+    volumes:
+      - ../../kb:/app/kb
+      - ../../me:/app/me
+      - ../../models:/app/models
+      - ../../data:/app/data
+    depends_on:
+      api:
+        condition: service_started
+
+  nginx:
+    profiles: ["proxy"]
+    image: nginx:1.27-alpine
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  frontend_node_modules:

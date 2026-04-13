@@ -8,16 +8,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
-# Handle both requirements.txt and requirements.txt.backend
-COPY requirements.txt* ./
-RUN if [ -f requirements.txt.backend ]; then cp requirements.txt.backend requirements.txt; fi
+COPY services/api/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
-
-# Rename main.py.backend to main.py for uvicorn (if it exists)
-RUN if [ -f main.py.backend ]; then mv main.py.backend main.py; fi
+# Copy application code and shared data
+COPY services/api ./services/api
+COPY services/indexer ./services/indexer
+COPY kb ./kb
+COPY me ./me
+COPY models ./models
+COPY data ./data
 
 # Build FAISS index at image build time (requires OPENAI_API_KEY at build)
 # Pass the key via build arg: --build-arg OPENAI_API_KEY=...
@@ -26,7 +26,7 @@ ARG OPENAI_API_KEY
 
 RUN if [ -n "$OPENAI_API_KEY" ]; then \
       echo "Building FAISS index during image build..." && \
-      OPENAI_API_KEY="$OPENAI_API_KEY" python build_faiss_offline.py ; \
+      OPENAI_API_KEY="$OPENAI_API_KEY" python services/indexer/build_faiss_offline.py ; \
     else \
       echo "WARNING: OPENAI_API_KEY not provided at build time; skipping FAISS index build." && \
       echo "The index will need to be built at runtime via /kb/build-faiss endpoint (dev only)." ; \
@@ -37,5 +37,5 @@ EXPOSE 8080
 
 # Run the application
 # Cloud Run will set PORT environment variable
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
+CMD uvicorn services.api.main:app --host 0.0.0.0 --port ${PORT:-8080}
 
