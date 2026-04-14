@@ -1,4 +1,7 @@
 steps:
+  # Canonical Artifact Registry image path for this deployment.
+  # The trigger already provides these substitutions.
+  # Result: europe-west8-docker.pkg.dev/<project>/<repo>/virtual-persona-backend:<tag>
   # Build the Docker image with FAISS index baked in
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
@@ -8,8 +11,8 @@ steps:
       - |
         docker build \
           --build-arg OPENAI_API_KEY="$$OPENAI_API_KEY" \
-          -t gcr.io/$PROJECT_ID/virtual-persona-backend:$SHORT_SHA \
-          -t gcr.io/$PROJECT_ID/virtual-persona-backend:latest \
+          -t ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/virtual-persona-backend:$SHORT_SHA \
+          -t ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/virtual-persona-backend:latest \
           -f services/api/Dockerfile.backend \
           .
 
@@ -18,7 +21,7 @@ steps:
     args:
       - 'push'
       - '--all-tags'
-      - 'gcr.io/$PROJECT_ID/virtual-persona-backend'
+      - '${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/virtual-persona-backend'
 
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -28,7 +31,7 @@ steps:
       - 'deploy'
       - 'virtual-persona-backend'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/virtual-persona-backend:$SHORT_SHA'
+      - '${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/virtual-persona-backend:$SHORT_SHA'
       - '--region'
       - 'europe-west8'
       - '--platform'
