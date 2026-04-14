@@ -1,4 +1,4 @@
-web: cd services/frontend && sh start-frontend.sh
+web: sh start-frontend.sh
 
 
 

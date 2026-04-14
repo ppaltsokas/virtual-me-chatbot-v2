@@ -3,10 +3,10 @@
 nixPkgs = ["nodejs_22"]
 
 [phases.install]
-cmds = ["cd services/frontend && npm ci"]
+cmds = ["npm ci"]
 
 [phases.build]
-cmds = ["cd services/frontend && npm run build"]
+cmds = ["npm run build"]
 
 [phases.start]
-cmds = ["cd services/frontend && sh start-frontend.sh"]
+cmds = ["sh start-frontend.sh"]
