@@ -9,4 +9,4 @@ cmds = ["npm ci"]
 cmds = ["npm run build"]
 
 [phases.start]
-cmds = ["sh start-frontend.sh"]
+cmds = ["node server.js"]
