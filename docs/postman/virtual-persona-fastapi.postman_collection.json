@@ -5,24 +5,7 @@
     "description": "Postman collection for the Virtual Persona FastAPI backend.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "{{base_url}}"
-    },
-    {
-      "key": "session_id",
-      "value": "{{session_id}}"
-    },
-    {
-      "key": "image_filename",
-      "value": "{{image_filename}}"
-    },
-    {
-      "key": "pdf_path",
-      "value": "{{pdf_path}}"
-    }
-  ],
+  "variable": [],
   "item": [
     {
       "name": "Root",
