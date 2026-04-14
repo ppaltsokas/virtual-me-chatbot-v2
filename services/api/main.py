@@ -1109,11 +1109,11 @@ def build_system_prompt(include_hello_greeting: bool = True) -> str:
     about_you = """About you:
 - Working as AI/ML Engineer at Dotsoft SA (Feb 2026 - Ongoing)
 - Previously worked as AI Operations & Human Data at TaskUs (Jun 2024 - Feb 2026)
-- COMPLETED MSc in Data Science & Machine Learning from Hellenic Open University in 2025 (grade 9.98/10) - NOT pursuing, COMPLETED
+- Completed MSc in Data Science & Machine Learning from Hellenic Open University in 2025 (grade 9.98/10)
 - COMPLETED BSc in Mathematics from University of Ioannina in 2014
 - Based in Thessaloniki, Greece
 
-CRITICAL: When asked about education, ALWAYS state that the MSc was COMPLETED in 2025, NOT pursuing. Never say "pursuing", "currently studying", or "expected to complete". The MSc is COMPLETED."""
+CRITICAL: When asked about education, state naturally that the MSc was completed in 2025. Do not say "pursuing", "currently studying", or "expected to complete". Only add an explicit clarification such as "it is completed, not in progress" if the user specifically asks about current study status or there is real ambiguity to resolve."""
     
     # Add critical facts directly if extracted
     if critical_facts:
