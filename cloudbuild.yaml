@@ -46,8 +46,6 @@ availableSecrets:
   secretManager:
     - versionName: projects/831351726786/secrets/OPENAI_API_KEY/versions/1
       env: 'OPENAI_API_KEY'
-    - versionName: projects/831351726786/secrets/GEMINI_API_KEY/versions/latest
-      env: 'GEMINI_API_KEY'
 
 options:
   logging: CLOUD_LOGGING_ONLY
