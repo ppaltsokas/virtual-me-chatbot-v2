@@ -5,7 +5,7 @@ steps:
     args:
       - 'build'
       - '--build-arg'
-      - 'OPENAI_API_KEY=${OPENAI_API_KEY}'
+      - 'OPENAI_API_KEY=$$OPENAI_API_KEY'
       - '-t'
       - 'gcr.io/$PROJECT_ID/virtual-persona-backend:$SHORT_SHA'
       - '-t'
@@ -41,9 +41,9 @@ steps:
       - '--timeout'
       - '300'
       - '--set-env-vars'
-      - 'GEMINI_API_KEY=${GEMINI_API_KEY}'
+      - 'GEMINI_API_KEY=$$GEMINI_API_KEY'
       - '--set-env-vars'
-      - 'OPENAI_API_KEY=${OPENAI_API_KEY}'
+      - 'OPENAI_API_KEY=$$OPENAI_API_KEY'
 
 # Reference secrets from Secret Manager
 availableSecrets:
