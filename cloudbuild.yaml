@@ -41,6 +41,8 @@ steps:
       - '2Gi'
       - '--timeout'
       - '300'
+      - '--remove-env-vars'
+      - 'GEMINI_API_KEY,OPENAI_API_KEY'
       - '--update-secrets'
       - 'GEMINI_API_KEY=GEMINI_API_KEY:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest'
 
