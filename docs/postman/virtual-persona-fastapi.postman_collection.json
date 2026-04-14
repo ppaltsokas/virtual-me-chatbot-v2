@@ -1,0 +1,269 @@
+{
+  "info": {
+    "_postman_id": "7f0c6bc4-6a50-4fa8-94d1-virtual-persona-fastapi",
+    "name": "Virtual Persona FastAPI",
+    "description": "Postman collection for the Virtual Persona FastAPI backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "{{base_url}}"
+    },
+    {
+      "key": "session_id",
+      "value": "{{session_id}}"
+    },
+    {
+      "key": "image_filename",
+      "value": "{{image_filename}}"
+    },
+    {
+      "key": "pdf_path",
+      "value": "{{pdf_path}}"
+    }
+  ],
+  "item": [
+    {
+      "name": "Root",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            ""
+          ]
+        },
+        "description": "Basic backend liveness endpoint."
+      }
+    },
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Detailed health endpoint with FAISS, persona, and KB status."
+      }
+    },
+    {
+      "name": "Chat",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "text/plain"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Tell me about your education background.\",\n  \"session_id\": \"{{session_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/chat",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "chat"
+          ]
+        },
+        "description": "Streaming text/plain chat endpoint. Body schema: message:string, session_id?:string."
+      }
+    },
+    {
+      "name": "KB Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/kb/status",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "kb",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "name": "KB Reload",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/kb/reload",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "kb",
+            "reload"
+          ]
+        },
+        "description": "Reloads the knowledge base without restarting the app."
+      }
+    },
+    {
+      "name": "KB Extract Images",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/kb/extract-images",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "kb",
+            "extract-images"
+          ]
+        },
+        "description": "Re-extracts images from all PDFs in the KB."
+      }
+    },
+    {
+      "name": "KB Build FAISS",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/kb/build-faiss",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "kb",
+            "build-faiss"
+          ]
+        },
+        "description": "Hidden endpoint. Returns 403 in production because FAISS is pre-built during Docker image build."
+      }
+    },
+    {
+      "name": "Persona Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/me/status",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "me",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Persona Reload",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/me/reload",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "me",
+            "reload"
+          ]
+        }
+      }
+    },
+    {
+      "name": "QADB Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/qadb/status",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "qadb",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get KB Image",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/kb/images/{{image_filename}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "kb",
+            "images",
+            "{{image_filename}}"
+          ]
+        },
+        "description": "Serves an extracted PNG image from kb/images."
+      }
+    },
+    {
+      "name": "Get CV PDF",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/me/cv",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "me",
+            "cv"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Project PDF",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/kb/pdf/{{pdf_path}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "kb",
+            "pdf",
+            "{{pdf_path}}"
+          ]
+        },
+        "description": "Example pdf_path: ML_projects/HW1_Problem1/HW1_Problem1.pdf"
+      }
+    }
+  ]
+}
