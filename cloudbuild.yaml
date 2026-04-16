@@ -41,10 +41,19 @@ steps:
       - '2Gi'
       - '--timeout'
       - '300'
+      - '--add-cloudsql-instances'
+      - '${_CLOUDSQL_INSTANCE_CONNECTION_NAME}'
       - '--remove-env-vars'
-      - 'GEMINI_API_KEY,OPENAI_API_KEY'
+      - 'GEMINI_API_KEY,OPENAI_API_KEY,DATABASE_URL,CLOUD_SQL_CONNECTION_NAME,POSTGRES_ENABLED,POSTGRES_HOST,POSTGRES_PORT,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_SSLMODE'
+      - '--update-env-vars'
+      - 'POSTGRES_ENABLED=true,CLOUD_SQL_CONNECTION_NAME=${_CLOUDSQL_INSTANCE_CONNECTION_NAME},POSTGRES_PORT=5432,POSTGRES_DB=${_POSTGRES_DB},POSTGRES_USER=${_POSTGRES_USER},POSTGRES_SSLMODE=disable'
       - '--update-secrets'
-      - 'GEMINI_API_KEY=GEMINI_API_KEY:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest'
+      - 'GEMINI_API_KEY=GEMINI_API_KEY:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,POSTGRES_PASSWORD=POSTGRES_PASSWORD:latest'
+
+substitutions:
+  _CLOUDSQL_INSTANCE_CONNECTION_NAME: 'virtualpersonacv:europe-west8:virtual-persona-db'
+  _POSTGRES_DB: 'virtual_persona'
+  _POSTGRES_USER: 'app_user'
 
 # Reference secrets from Secret Manager
 availableSecrets:

@@ -34,6 +34,7 @@ htmlcov/
 .env.*.local
 .env.production
 .env.development
+.env.example
 
 # Sensitive files
 *.key

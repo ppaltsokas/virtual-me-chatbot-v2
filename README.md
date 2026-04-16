@@ -70,6 +70,7 @@ The system only searches the knowledge base on initial queries or explicit reque
 ### Infrastructure
 - Google Cloud Run - Backend deployment (containerized, auto-scaling)
 - Google Cloud Build - Automated CI/CD with Secret Manager integration
+- Google Cloud SQL for PostgreSQL - Production chat interaction storage
 - Railway - Frontend deployment
 - Docker - Containerization with pre-built FAISS index
 
@@ -121,6 +122,27 @@ export GEMINI_API_KEY="your_gemini_key"
 ```
 
 **Note**: `OPENAI_API_KEY` is required for FAISS index building (local and production).
+
+### Production Cloud SQL Setup
+
+For production chat logging on Cloud Run, configure a Cloud SQL PostgreSQL instance and provide:
+
+```env
+POSTGRES_ENABLED=true
+CLOUD_SQL_CONNECTION_NAME=<project>:<region>:<instance>
+POSTGRES_PORT=5432
+POSTGRES_DB=<database_name>
+POSTGRES_USER=<database_user>
+POSTGRES_PASSWORD=<database_password>
+POSTGRES_SSLMODE=disable
+```
+
+The repository's `cloudbuild.yaml` is prepared to:
+- attach the Cloud SQL instance to Cloud Run with `--add-cloudsql-instances`
+- inject `CLOUD_SQL_CONNECTION_NAME`, `POSTGRES_DB`, `POSTGRES_USER`
+- read `POSTGRES_PASSWORD` from Secret Manager
+
+You still need to create the Cloud SQL instance, database, user, and the `POSTGRES_PASSWORD` secret in GCP.
 
 ### Running Locally
 

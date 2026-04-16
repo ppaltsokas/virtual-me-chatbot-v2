@@ -24,6 +24,12 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import sqlite3
 import numpy as np
+try:
+    import psycopg
+    POSTGRES_DRIVER_AVAILABLE = True
+except ImportError:
+    psycopg = None
+    POSTGRES_DRIVER_AVAILABLE = False
 FAISS_AVAILABLE = False
 OPENAI_AVAILABLE = False
 NBFORMAT_AVAILABLE = False
@@ -77,6 +83,8 @@ if not OPENAI_AVAILABLE:
     logger.warning("OpenAI not available. Tool calling will use Gemini only.")
 if not NBFORMAT_AVAILABLE:
     logger.warning("nbformat not available. Jupyter notebook support disabled.")
+if not POSTGRES_DRIVER_AVAILABLE:
+    logger.warning("psycopg not available. PostgreSQL chat logging will be disabled.")
 
 # Load environment variables from .env.local file
 # Use override=True to ensure .env.local takes precedence over system environment variables
@@ -295,6 +303,141 @@ IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
 DATA_FOLDER = REPO_ROOT / "data"
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
 QADB = DATA_FOLDER / "qadb.sqlite"
+
+# =============================================================
+# PostgreSQL Chat Interaction Logging
+# =============================================================
+DATABASE_URL = os.getenv("DATABASE_URL")
+CLOUD_SQL_CONNECTION_NAME = os.getenv("CLOUD_SQL_CONNECTION_NAME")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5433"))
+POSTGRES_DB = os.getenv("POSTGRES_DB", "local_db")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
+POSTGRES_SSLMODE = os.getenv("POSTGRES_SSLMODE", "prefer")
+POSTGRES_ENABLED = os.getenv("POSTGRES_ENABLED", "true").lower() in {"1", "true", "yes", "on"}
+CHATLOG_TABLE = "chat_interactions"
+
+def _postgres_target_host() -> str:
+    """Resolve the PostgreSQL host or Cloud SQL unix socket path."""
+    if CLOUD_SQL_CONNECTION_NAME:
+        return f"/cloudsql/{CLOUD_SQL_CONNECTION_NAME}"
+    return POSTGRES_HOST
+
+def _postgres_dsn() -> str:
+    """Build a DSN for PostgreSQL chat logging."""
+    if DATABASE_URL:
+        return DATABASE_URL
+
+    target_host = _postgres_target_host()
+    return (
+        f"host={target_host} "
+        f"port={POSTGRES_PORT} "
+        f"dbname={POSTGRES_DB} "
+        f"user={POSTGRES_USER} "
+        f"password={POSTGRES_PASSWORD} "
+        f"sslmode={POSTGRES_SSLMODE}"
+    )
+
+def postgres_chat_logging_available() -> bool:
+    """Return whether PostgreSQL chat logging is enabled and available."""
+    return POSTGRES_ENABLED and POSTGRES_DRIVER_AVAILABLE
+
+def _postgres_conn():
+    """Create and return a PostgreSQL connection for chat logging."""
+    if not postgres_chat_logging_available():
+        raise RuntimeError("PostgreSQL chat logging is disabled or psycopg is unavailable.")
+    return psycopg.connect(_postgres_dsn())
+
+def init_postgres_chat_logging() -> bool:
+    """Create the chat interaction table when PostgreSQL logging is enabled."""
+    if not postgres_chat_logging_available():
+        logger.info("PostgreSQL chat logging disabled or psycopg missing; skipping init.")
+        return False
+
+    try:
+        with _postgres_conn() as con:
+            with con.cursor() as cur:
+                cur.execute(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS {CHATLOG_TABLE} (
+                        id BIGSERIAL PRIMARY KEY,
+                        session_id TEXT NOT NULL,
+                        request_message TEXT NOT NULL,
+                        response_message TEXT NOT NULL,
+                        response_source TEXT NOT NULL,
+                        model_name TEXT,
+                        used_persona_context BOOLEAN NOT NULL DEFAULT FALSE,
+                        used_kb_context BOOLEAN NOT NULL DEFAULT FALSE,
+                        used_qa_context BOOLEAN NOT NULL DEFAULT FALSE,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
+                    """
+                )
+                cur.execute(
+                    f"CREATE INDEX IF NOT EXISTS idx_{CHATLOG_TABLE}_session_id ON {CHATLOG_TABLE}(session_id);"
+                )
+                cur.execute(
+                    f"CREATE INDEX IF NOT EXISTS idx_{CHATLOG_TABLE}_created_at ON {CHATLOG_TABLE}(created_at DESC);"
+                )
+            con.commit()
+        logger.info(
+            f"PostgreSQL chat logging initialized for {_postgres_target_host()}:{POSTGRES_PORT}/{POSTGRES_DB}"
+        )
+        return True
+    except Exception as e:
+        logger.warning(f"PostgreSQL chat logging init failed: {e}")
+        return False
+
+def save_chat_interaction(
+    session_id: str,
+    request_message: str,
+    response_message: str,
+    response_source: str,
+    used_persona_context: bool = False,
+    used_kb_context: bool = False,
+    used_qa_context: bool = False,
+    model_name: str = "gemini-2.5-flash",
+) -> Dict:
+    """Persist a chat turn to PostgreSQL."""
+    if not postgres_chat_logging_available():
+        return {"saved": False, "reason": "postgres_logging_disabled"}
+
+    try:
+        with _postgres_conn() as con:
+            with con.cursor() as cur:
+                cur.execute(
+                    f"""
+                    INSERT INTO {CHATLOG_TABLE} (
+                        session_id,
+                        request_message,
+                        response_message,
+                        response_source,
+                        model_name,
+                        used_persona_context,
+                        used_kb_context,
+                        used_qa_context
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id;
+                    """,
+                    (
+                        session_id,
+                        request_message,
+                        response_message,
+                        response_source,
+                        model_name,
+                        used_persona_context,
+                        used_kb_context,
+                        used_qa_context,
+                    ),
+                )
+                inserted_id = cur.fetchone()[0]
+            con.commit()
+        logger.info(f"Saved chat interaction to PostgreSQL with id={inserted_id}")
+        return {"saved": True, "id": inserted_id}
+    except Exception as e:
+        logger.warning(f"Failed to save chat interaction to PostgreSQL: {e}")
+        return {"saved": False, "reason": str(e)}
 
 def _qadb_conn():
     """Create and return a connection to the Q&A database."""
@@ -2038,6 +2181,9 @@ if FAISS_AVAILABLE and openai_client:
     except Exception as e:
         logger.warning(f"Error loading FAISS index: {e}")
 
+# Initialize PostgreSQL chat logging (optional)
+init_postgres_chat_logging()
+
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=MAX_MESSAGE_LENGTH)
     session_id: Optional[str] = "default"
@@ -2047,6 +2193,8 @@ class ChatRequest(BaseModel):
 async def chat(request: Request, chat_request: ChatRequest):
     """Chat endpoint with knowledge base integration and conversation memory."""
     try:
+        raw_session_id = chat_request.session_id or "default"
+
         # Get client IP and check if blocked
         client_ip = get_client_ip(request)
         if is_ip_blocked(client_ip):
@@ -2084,6 +2232,12 @@ async def chat(request: Request, chat_request: ChatRequest):
         if is_hello_there:
             hello_response = "General Kenoooobiiii... I mean... Hi! How are you?"
             logger.info(f"Deterministic hello-there response: {hello_response}")
+            save_chat_interaction(
+                session_id=raw_session_id,
+                request_message=chat_request.message,
+                response_message=hello_response,
+                response_source="deterministic_hello_there",
+            )
             return StreamingResponse(
                 iter([hello_response]),
                 media_type="text/plain"
@@ -2111,6 +2265,13 @@ async def chat(request: Request, chat_request: ChatRequest):
                 if 'birth_date' in critical_facts:
                     birth_response = f"I was born in {critical_facts['birth_date']}."
                     logger.info(f"Deterministic birth question response: {birth_response}")
+                    save_chat_interaction(
+                        session_id=raw_session_id,
+                        request_message=chat_request.message,
+                        response_message=birth_response,
+                        response_source="deterministic_birth_date",
+                        used_persona_context=True,
+                    )
                     return StreamingResponse(
                         iter([birth_response]),
                         media_type="text/plain"
@@ -2126,13 +2287,19 @@ async def chat(request: Request, chat_request: ChatRequest):
         if is_asking_about_msc or (message_lower in ['what about data science?', 'what about data science'] and 'education' in message_lower):
             msc_response = "I completed my MSc in Data Science & Machine Learning from the Hellenic Open University in 2025 with a grade of 9.98/10. The degree is COMPLETED, not in progress or pursuing."
             logger.info(f"Deterministic MSc completion response: {msc_response}")
+            save_chat_interaction(
+                session_id=raw_session_id,
+                request_message=chat_request.message,
+                response_message=msc_response,
+                response_source="deterministic_msc_status",
+                used_persona_context=True,
+            )
             return StreamingResponse(
                 iter([msc_response]),
                 media_type="text/plain"
             )
         
         # Get or create chat session with prompt versioning (Fix B)
-        raw_session_id = chat_request.session_id or "default"
         # Prefix with prompt version to force recreation when prompt changes
         session_id = f"{SYSTEM_PROMPT_VERSION}:{raw_session_id}"
         
@@ -2459,12 +2626,31 @@ async def chat(request: Request, chat_request: ChatRequest):
                                 logger.info("Saved answer to Q&A database")
                             except Exception as e:
                                 logger.warning(f"Failed to save to Q&A database: {e}")
+
+                        save_chat_interaction(
+                            session_id=raw_session_id,
+                            request_message=chat_request.message,
+                            response_message=full_response,
+                            response_source="gemini_stream",
+                            used_persona_context=bool(persona_context),
+                            used_kb_context=bool(kb_context),
+                            used_qa_context=bool(qa_context),
+                        )
                     except Exception as e:
                         logger.warning(f"Error in post-processing: {e}")
                         
             except Exception as e:
                 error_msg = f"Error generating response: {str(e)}"
                 logger.error(error_msg, exc_info=True)
+                save_chat_interaction(
+                    session_id=raw_session_id,
+                    request_message=chat_request.message,
+                    response_message=f"[Error: {error_msg}]",
+                    response_source="backend_error",
+                    used_persona_context=bool(persona_context),
+                    used_kb_context=bool(kb_context),
+                    used_qa_context=bool(qa_context),
+                )
                 yield f"[Error: {error_msg}]"
         
         return StreamingResponse(
@@ -2569,6 +2755,10 @@ async def health_check():
         "kb_folder_path": str(KB_FOLDER),
         "me_folder_path": str(ME_FOLDER),
         "qadb_initialized": QADB.exists(),
+        "postgres_chat_logging_enabled": POSTGRES_ENABLED,
+        "postgres_chat_logging_available": postgres_chat_logging_available(),
+        "postgres_chat_logging_target": f"{_postgres_target_host()}:{POSTGRES_PORT}/{POSTGRES_DB}",
+        "cloud_sql_connection_name": CLOUD_SQL_CONNECTION_NAME,
         "system_instruction_length": system_instruction_length,
         "system_instruction_preview": system_instruction_preview,
         "persona_context_length": persona_context_length,
