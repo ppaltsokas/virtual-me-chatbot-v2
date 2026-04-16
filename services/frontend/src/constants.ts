@@ -322,4 +322,4 @@ export const RESUME_DATA: ResumeData = {
   ]
 };
 
-export const INITIAL_CHAT_MESSAGE = `Hi! I'm Panos's virtual persona. You can ask me about my Generative AI projects (GANs), my Time Series analysis on Sunspots, or my experience in RLHF at TaskUs. How can I help?`;
+export const INITIAL_CHAT_MESSAGE = `Hello! I'm Panos's virtual persona. I can tell you about his AI, machine learning, and data science work, from Generative AI projects with GANs to Time Series forecasting on Sunspots and broader real-world ML projects. What would you like to explore?`;
