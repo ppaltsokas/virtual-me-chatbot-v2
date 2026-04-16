@@ -8,7 +8,7 @@ Live at: https://www.ppaltsokas.com
 
 This project explores how large language models can be combined with structured personal data to create more natural and informative professional interfaces. It demonstrates building and deploying AI systems that provide contextual, explainable answers using retrieval-augmented generation (RAG).
 
-As someone working in AI Operations and RLHF, I'm interested in how AI systems can be made more transparent and grounded in actual data rather than generating responses from training data alone.
+The repository reflects an interest in AI systems that remain transparent and grounded in source material instead of relying on unsupported generation.
 
 ## What It Does
 
@@ -43,7 +43,7 @@ This is a two-part application:
 
 ### How It Works
 
-1. User query arrives at FastAPI backend
+1. A query arrives at the FastAPI backend
 2. Backend performs semantic search across knowledge base (PDFs, markdown files)
 3. Relevant document chunks are retrieved and ranked by relevance
 4. Context is built with retrieved documents and conversation history
@@ -82,9 +82,9 @@ The system only searches the knowledge base on initial queries or explicit reque
 ## Quick Start
 
 ### Prerequisites
-- Node.js (for frontend)
-- Python 3.11+ (for backend)
-- Google Gemini API Key (Get one here: https://makersuite.google.com/app/apikey)
+- Node.js for the frontend
+- Python 3.11+ for the backend
+- Google Gemini API key: https://makersuite.google.com/app/apikey
 
 ### Installation
 
@@ -102,30 +102,30 @@ pip install -r requirements.txt.backend
 
 ### Configuration
 
-Create a `.env.local` file for the frontend:
+Frontend `.env.local`:
 
 ```env
-GEMINI_API_KEY=your_api_key_here
+GEMINI_API_KEY=<api_key_here>
 VITE_API_URL=http://localhost:8000
 ```
 
-For the backend, set environment variables:
+Backend environment variables:
 
 ```bash
 # Windows PowerShell
-$env:OPENAI_API_KEY="your_openai_key"
-$env:GEMINI_API_KEY="your_gemini_key"
+$env:OPENAI_API_KEY="<openai_api_key>"
+$env:GEMINI_API_KEY="<gemini_api_key>"
 
 # Linux/Mac
-export OPENAI_API_KEY="your_openai_key"
-export GEMINI_API_KEY="your_gemini_key"
+export OPENAI_API_KEY="<openai_api_key>"
+export GEMINI_API_KEY="<gemini_api_key>"
 ```
 
 **Note**: `OPENAI_API_KEY` is required for FAISS index building (local and production).
 
 ### Production Cloud SQL Setup
 
-For production chat logging on Cloud Run, configure a Cloud SQL PostgreSQL instance and provide:
+Production chat logging on Cloud Run requires a Cloud SQL PostgreSQL instance and the following variables:
 
 ```env
 POSTGRES_ENABLED=true
@@ -142,7 +142,11 @@ The repository's `cloudbuild.yaml` is prepared to:
 - inject `CLOUD_SQL_CONNECTION_NAME`, `POSTGRES_DB`, `POSTGRES_USER`
 - read `POSTGRES_PASSWORD` from Secret Manager
 
-You still need to create the Cloud SQL instance, database, user, and the `POSTGRES_PASSWORD` secret in GCP.
+Required GCP resources:
+- Cloud SQL instance
+- PostgreSQL database
+- PostgreSQL application user
+- `POSTGRES_PASSWORD` secret in Secret Manager
 
 ### Running Locally
 
@@ -154,7 +158,7 @@ python main.py.backend
 npm run dev
 ```
 
-Access at `http://localhost:5173` (or port shown in terminal).
+Default local access URL: `http://localhost:5173`
 
 ## Project Structure
 
@@ -204,8 +208,7 @@ The portfolio is live and fully functional with custom domain, SSL certificate, 
 ## Author
 
 Panagiotis Paltsokas
-Data Scientist / AI Trust & Safety Professional  
-Working at TaskUs (AI Operations | RLHF & Model Optimization)  
+AI/ML Engineer at Dotsoft SA  
 MSc in Data Science & Machine Learning | BSc in Mathematics  
 Based in Thessaloniki, Greece
 
