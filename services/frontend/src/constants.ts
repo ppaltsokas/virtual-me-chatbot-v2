@@ -7,7 +7,7 @@ export const RESUME_DATA: ResumeData = {
   personalInfo: {
     name: "Panagiotis Paltsokas",
     title: "Data Scientist | AI/ML Engineer",
-    bio: "Data Scientist with hands-on experience in data science, analytics, and AI engineering, combining practical project work with continuous learning and adaptation to emerging technologies. I enjoy building data-driven solutions, AI tools, and analytical workflows that solve real problems and create measurable value. I am particularly motivated by the rapid evolution of AI and seek to contribute in roles where I can apply modern technologies, expand my expertise, and grow alongside the next generation of intelligent systems.",
+    bio: "AI/ML Engineer and Data Scientist with hands-on experience building end-to-end machine learning systems in Python and SQL, from ETL and feature engineering through model evaluation, inference, deployment, and monitoring. I work on real-world smart-city, time-series, IoT, federated learning, and edge AI use cases, with particular focus on reliable pipelines, reproducible experimentation, and production-oriented engineering for practical operational applications.",
     email: "ppaltsokas@gmail.com",
     location: "Thessaloniki, GR",
     socials: {
@@ -21,11 +21,11 @@ export const RESUME_DATA: ResumeData = {
       role: "AI/ML Engineer",
       company: "Dotsoft SA",
       period: "Feb 2026 - Ongoing",
-      description: `• Design and develop end-to-end machine learning solutions, covering data preparation, feature engineering, model training, evaluation, deployment, and monitoring.
+      description: `• Develop end-to-end ML solutions for smart-city applications, spanning ETL, feature engineering, time-series modeling, evaluation, inference, and deployment-oriented workflows.
 
-• Build production-oriented AI/ML pipelines and services for real-world use cases, using modular Python development, Docker-based containerization, database integration, and a strong focus on operational reliability.
+• Build federated and edge-AI demonstrators using Flower, Docker, ONNX, browser inference, and distributed clients across heterogeneous compute environments, validating latency, accuracy, privacy, and efficiency KPIs.
 
-• Contribute across the full ML lifecycle, including exploratory analysis, experimentation, inference workflows, API integration, and continuous improvement of deployed solutions.`,
+• Own experimentation and validation workflows, translating KPI requirements into reproducible benchmarks, technical evidence, reports, and deployment-oriented engineering decisions for stakeholders.`,
       technologies: ["Python", "Machine Learning", "Feature Engineering", "Model Training", "Model Evaluation", "Docker", "Databases", "API Integration", "ML Pipelines", "Monitoring"]
     },
     {
