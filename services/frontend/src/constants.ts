@@ -26,7 +26,7 @@ export const RESUME_DATA: ResumeData = {
 • Build federated and edge-AI demonstrators using Flower, Docker, ONNX, browser inference, and distributed clients across heterogeneous compute environments, validating latency, accuracy, privacy, and efficiency KPIs.
 
 • Own experimentation and validation workflows, translating KPI requirements into reproducible benchmarks, technical evidence, reports, and deployment-oriented engineering decisions for stakeholders.`,
-      technologies: ["Python", "Machine Learning", "Feature Engineering", "Model Training", "Model Evaluation", "Docker", "Databases", "API Integration", "ML Pipelines", "Monitoring"]
+      technologies: ["Python", "SQL", "Time Series", "ETL", "Feature Engineering", "Model Evaluation", "Inference", "Flower", "Federated Learning", "Docker", "ONNX", "Browser Inference", "Edge AI", "Experimentation", "Technical Validation"]
     },
     {
       id: "exp-1",
@@ -305,15 +305,23 @@ export const RESUME_DATA: ResumeData = {
   skills: [
     {
       name: "AI & Machine Learning",
-      skills: ["Python", "TensorFlow", "Keras", "Scikit-learn", "Hugging Face", "RLHF", "LLMs", "RAG", "GANs", "RNNs", "CNNs", "Ensemble Methods", "Feature Engineering", "Prompt Engineering"]
+      skills: ["Python", "Scikit-learn", "TensorFlow", "Keras", "PyTorch", "Time Series", "Forecasting", "Classification", "Regression", "Feature Engineering", "Model Evaluation", "Chronological Validation", "Hyperparameter Optimization", "Ensemble Methods", "RNNs", "CNNs", "GANs"]
     },
     {
       name: "Data Science & Viz",
-      skills: ["Pandas", "NumPy", "SQL", "Matplotlib", "Seaborn", "Power BI", "PCA", "Statistical Analysis"]
+      skills: ["Pandas", "NumPy", "SQL", "PostgreSQL", "MariaDB", "ETL", "Data Validation", "Temporal Aggregation", "IoT Data Processing", "Statistical Analysis", "Matplotlib", "Seaborn", "Power BI", "PCA"]
     },
     {
       name: "DevOps & Cloud",
-      skills: ["Docker", "FastAPI", "Git", "Google Cloud Run", "Railway", "CI/CD", "Postman", "Jupyter", "PyCharm", "Cursor"]
+      skills: ["Docker", "FastAPI", "REST APIs", "Git", "GitHub", "Google Cloud Run", "Railway", "CI/CD", "Scheduled Pipelines", "Model Artifacts", "Reproducible Workflows", "Jupyter", "Postman", "PyCharm", "Cursor"]
+    },
+    {
+      name: "Federated & Edge AI",
+      skills: ["Flower", "Federated Learning", "FedAvg", "ONNX", "ONNX Runtime", "Edge Inference", "Browser Inference", "WebAssembly", "WebGPU", "Privacy-Preserving ML"]
+    },
+    {
+      name: "Generative AI & Agents",
+      skills: ["Hugging Face", "LLMs", "RAG", "Embeddings", "Semantic Search", "Tool Calling", "AI Agents", "LlamaIndex", "MCP", "Prompt Engineering"]
     },
     {
       name: "Languages",
